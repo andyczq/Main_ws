@@ -33,20 +33,20 @@ public:
 
 private:
     serial::Serial tgrobot_serial_port;
-    std::string serial_port_name, odom_frame_id, tgrobot_frame_id;
+    std::string serial_port_name, odom_frame_id, base_frame_id;
     int serial_baud_rate;
     ros::Subscriber twist_cmd_vel;
     void CMD_Vel_Callback(const geometry_msgs::Twist &twist_aux);
     uint8_t CMD_Check_CRC(uint8_t *data, uint8_t len);
 
     ros::Publisher battery_pub, odometer_pub;
-    ros::Timer battery_timer;
-    void BatteryPub_Timer_Callback(const ros::TimerEvent &event);
+    ros::Timer battery_timer, odometer_timer;
 
-    ros::Time current_time, previous_time;
+    void BatteryPub_TimerCallback(const ros::TimerEvent &event);
+
     Pose_Tgrobot Odom_Pose_data;
-    bool GetOdometer_toSensor();
-    void Odometer_Publish_FUN(Vel_Tgrobot vel);
+    bool GetOdometer_toSensor(const Vel_Tgrobot &vel);
+    void OdomPub_TimerCallback(const ros::TimerEvent &event);
 };
 
 #endif
