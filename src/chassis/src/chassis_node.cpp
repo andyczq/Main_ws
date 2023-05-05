@@ -36,7 +36,7 @@ turn_on_tgrobot::turn_on_tgrobot()
     twist_cmd_vel = nh.subscribe("cmd_vel", 100, &turn_on_tgrobot::CMD_Vel_Callback, this);
 
     battery_pub = nh.advertise<sensor_msgs::BatteryState>("Battery", 10);
-    battery_timer = nh.createTimer(ros::Duration(1.0/50), &turn_on_tgrobot::Battery_Timer_Callback, this);
+    battery_timer = nh.createTimer(ros::Duration(1.0/50), &turn_on_tgrobot::BatteryPub_Timer_Callback, this);
 
 }
 
@@ -106,7 +106,7 @@ uint8_t turn_on_tgrobot::CMD_Check_CRC(uint8_t *data, uint8_t len)
     return crc;
 }
 
-void turn_on_tgrobot::Battery_Timer_Callback(const ros::TimerEvent &event)
+void turn_on_tgrobot::BatteryPub_Timer_Callback(const ros::TimerEvent &event)
 {
     uint8_t cmd_data[6] = {0x5A, 0x06, 0x01, 0x07, 0x00, 0xe4};
 
@@ -126,10 +126,11 @@ void turn_on_tgrobot::Battery_Timer_Callback(const ros::TimerEvent &event)
         rate.sleep();
     }
 
-    uint8_t serial_buf[10] = {0};
-    if(tgrobot_serial_port.available())
+    uint8_t serial_buf[10] = {0}, count = 0;
+    if(count = tgrobot_serial_port.available())
     {
         tgrobot_serial_port.read(serial_buf, sizeof(serial_buf));
+        // ROS_INFO("[CMD:Battery] Serial port receive %d bytes.", count);
         // ROS_INFO("[CMD Battery]:%x-%x-%x-%x-%x-%x-%x-%x-%x-%x",serial_buf[0],serial_buf[1],serial_buf[2],serial_buf[3],\
         // serial_buf[4],serial_buf[5],serial_buf[6],serial_buf[7],serial_buf[8],serial_buf[9]);
     }

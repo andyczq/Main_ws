@@ -26,7 +26,7 @@ private:
 
     ros::Publisher battery_pub;
     ros::Timer battery_timer;
-    void Battery_Timer_Callback(const ros::TimerEvent &event);
+    void BatteryPub_Timer_Callback(const ros::TimerEvent &event);
 };
 
 #endif
