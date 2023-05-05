@@ -45,7 +45,7 @@ private:
     void BatteryPub_TimerCallback(const ros::TimerEvent &event);
 
     Pose_Tgrobot Odom_Pose_data;
-    bool GetOdometer_toSensor(const Vel_Tgrobot &vel);
+    bool GetOdometer_toSensor(Vel_Tgrobot &vel);
     void OdomPub_TimerCallback(const ros::TimerEvent &event);
 };
 

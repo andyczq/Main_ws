@@ -66,7 +66,7 @@ void turn_on_tgrobot::tgrobot_controller()
     }
 }
 
-bool turn_on_tgrobot::GetOdometer_toSensor(const Vel_Tgrobot &vel)
+bool turn_on_tgrobot::GetOdometer_toSensor(Vel_Tgrobot &vel)
 {
     uint8_t cmd_odom[6] = {0x5A, 0x06, 0x01, 0x11, 0x00, 0xA2};
 
@@ -94,7 +94,6 @@ bool turn_on_tgrobot::GetOdometer_toSensor(const Vel_Tgrobot &vel)
         // serial_buf[4],serial_buf[5],serial_buf[6],serial_buf[7],serial_buf[8],serial_buf[9],serial_buf[10],serial_buf[11],serial_buf[12],serial_buf[13]);
     }
 
-    Vel_Tgrobot vel_data;
     short trans_vel_temp = 0;
     static ros::Time current_time = ros::Time::now();
     static ros::Time previous_time = current_time;
@@ -109,25 +108,25 @@ bool turn_on_tgrobot::GetOdometer_toSensor(const Vel_Tgrobot &vel)
             trans_vel_temp = 0;
             trans_vel_temp |= serial_buf[4]<<8;
             trans_vel_temp |= serial_buf[5]; 
-            vel_data.X = trans_vel_temp/1000.0;
+            vel.X = trans_vel_temp/1000.0;
 
             trans_vel_temp = 0;
             trans_vel_temp |= serial_buf[6]<<8;
             trans_vel_temp |= serial_buf[7];
-            vel_data.Y = trans_vel_temp/1000.0;
+            vel.Y = trans_vel_temp/1000.0;
 
             trans_vel_temp = 0;
             trans_vel_temp |= serial_buf[8]<<8;
             trans_vel_temp |= serial_buf[9];
-            vel_data.angle_yaw = (trans_vel_temp/100.0)*PI/180.0;  // Angle to radian
+            vel.angle_yaw = (trans_vel_temp/100.0)*PI/180.0;  // Angle to radian
 
             trans_vel_temp = 0;
             trans_vel_temp |= serial_buf[10]<<8;
             trans_vel_temp |= serial_buf[11];
-            vel_data.Z = trans_vel_temp/1000.0;
+            vel.Z = trans_vel_temp/1000.0;
 
-            Odom_Pose_data.X += (vel_data.X * cos(vel_data.angle_yaw) - vel_data.Y * sin(vel_data.angle_yaw)) * sampling_time;
-            Odom_Pose_data.Y += (vel_data.X * sin(vel_data.angle_yaw) + vel_data.Y * cos(vel_data.angle_yaw)) * sampling_time;
+            Odom_Pose_data.X += (vel.X * cos(vel.angle_yaw) - vel.Y * sin(vel.angle_yaw)) * sampling_time;
+            Odom_Pose_data.Y += (vel.X * sin(vel.angle_yaw) + vel.Y * cos(vel.angle_yaw)) * sampling_time;
             previous_time = current_time;
 
             return true;
@@ -158,6 +157,7 @@ void turn_on_tgrobot::OdomPub_TimerCallback(const ros::TimerEvent &event)
         odom_msgs.twist.twist.angular.z = vel_data.Z;
 
         odometer_pub.publish(odom_msgs);
+        ROS_INFO("[Odometer] Odom_Pose: %.4f  %.4f   Odom_Twist:%.4f  %.4f  %.4f",Odom_Pose_data.X, Odom_Pose_data.Y, vel_data.X, vel_data.Y, vel_data.Z);
     }
     else {
         ROS_ERROR_STREAM("Get odometer data error.");
