@@ -3,13 +3,13 @@
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "chassis");
-    turn_on_tgrobot tg;
+    tgrobot_chassis tg;
     tg.tgrobot_controller();
     
     return 0;
 }
 
-turn_on_tgrobot::turn_on_tgrobot()
+tgrobot_chassis::tgrobot_chassis()
 {
     ros::NodeHandle nh;
     nh.param<std::string>("Serial_port_name", serial_port_name, "/dev/chassis_serial");
@@ -32,31 +32,20 @@ turn_on_tgrobot::turn_on_tgrobot()
     }
     ROS_INFO_STREAM("Tgrobot serial port open succeed!");
 
-    twist_cmd_vel = nh.subscribe("cmd_vel", 100, &turn_on_tgrobot::CMD_Vel_Callback, this);
+    twist_cmd_vel = nh.subscribe("cmd_vel", 100, &tgrobot_chassis::CMD_Vel_Callback, this);
 
-    battery_pub = nh.advertise<sensor_msgs::BatteryState>("battery", 10);
-    battery_timer = nh.createTimer(ros::Duration(1.0/2), &turn_on_tgrobot::BatteryPub_TimerCallback, this);
+    battery_pub = nh.advertise<sensor_msgs::BatteryState>("Battery", 10);
+    battery_timer = nh.createTimer(ros::Duration(1.0/2), &tgrobot_chassis::BatteryPub_TimerCallback, this);
     
-    odometer_pub = nh.advertise<nav_msgs::Odometry>("odom", 50);
-    odometer_timer = nh.createTimer(ros::Duration(1.0/50), &turn_on_tgrobot::OdomPub_TimerCallback, this);
+    odometer_pub = nh.advertise<nav_msgs::Odometry>("Odometer", 50);
+    odometer_timer = nh.createTimer(ros::Duration(1.0/50), &tgrobot_chassis::OdomPub_TimerCallback, this);
+
+    // ultrasonic_pub = nh.advertise<sensor_msgs::Range>("range", 10);
+    ultrasonic_pub = nh.advertise<chassis_msgs::Ultrasonic>("Sonar", 10);
+    ultrasonic_timer = nh.createTimer(ros::Duration(1.0/10), &tgrobot_chassis::UltrasonicPub_TimerCallback, this);
 }
 
-turn_on_tgrobot::~turn_on_tgrobot()
-{
-    try
-    {
-        tgrobot_serial_port.close();
-        ROS_INFO_STREAM("Tgrobot serial port close succeed!");
-    }
-    catch(const serial::IOException& e)
-    {
-        ROS_ERROR("%s \n", e.what());
-        ROS_ERROR_STREAM("Unable to close the serial port.");
-    }
-    
-}
-
-void turn_on_tgrobot::tgrobot_controller()
+void tgrobot_chassis::tgrobot_controller()
 {
     while(ros::ok())
     {
@@ -64,79 +53,93 @@ void turn_on_tgrobot::tgrobot_controller()
     }
 }
 
-bool turn_on_tgrobot::GetOdometer_toSensor(Odom_Tgrobot &odom)
+void tgrobot_chassis::UltrasonicPub_TimerCallback(const ros::TimerEvent &event)
+{
+    uint8_t cmd_sonic[6] = {0x5A, 0x06, 0x01, 0x19, 0x00, 0xD4};
+    Serial_SendCMD_waitRD(cmd_sonic);
+
+    uint8_t serial_buf[10] = {0}, count = 0;
+    if((count = tgrobot_serial_port.available()) == 10) {
+        tgrobot_serial_port.read(serial_buf, sizeof(serial_buf));
+    }
+    else return;
+
+    uint8_t sonic_data[4] = {0};
+    if((serial_buf[9] == Check_CRC(serial_buf, 9)) && (serial_buf[3] == 0x1A))
+    {
+        sonic_data[0] = serial_buf[4];
+        sonic_data[1] = serial_buf[5];
+        sonic_data[2] = serial_buf[6];
+        sonic_data[3] = serial_buf[7];
+    }
+    else return;
+
+    chassis_msgs::Ultrasonic sonar;
+    sonar.header.stamp = ros::Time::now();
+    sonar.header.frame_id = "sonar";
+    sonar.field_of_view = 0.15;
+    sonar.min_range = 0.01;
+    sonar.max_range = 0.40;
+}
+
+bool tgrobot_chassis::GetOdometer_toSensor(Odom_Chassis &odom)
 {
     uint8_t cmd_odom[6] = {0x5A, 0x06, 0x01, 0x11, 0x00, 0xA2};
 
-    try
-    {
-        tgrobot_serial_port.write(cmd_odom, sizeof(cmd_odom));
-    }
-    catch(const serial::IOException& e)
-    {
-        // std::cerr << e.what() << '\n';
-        ROS_ERROR("%s \n", e.what());
-        ROS_ERROR_STREAM("Unable to write CMD[Battery].\n");
-    }
-
-    ros::Rate rate(100);
-    while(tgrobot_serial_port.waitReadable() == false) {
-        rate.sleep();
-    }
+    Serial_SendCMD_waitRD(cmd_odom);
 
     uint8_t serial_buf[14] = {0}, count = 0;
-    if(count = tgrobot_serial_port.available())
+    if((count = tgrobot_serial_port.available()) == 14)
     {
         tgrobot_serial_port.read(serial_buf, sizeof(serial_buf));
         // ROS_INFO("[CMD:Odometer] Serial port receive %d bytes.", count);
         // ROS_INFO("[CMD:Odometer] %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x",serial_buf[0],serial_buf[1],serial_buf[2],serial_buf[3],\
         // serial_buf[4],serial_buf[5],serial_buf[6],serial_buf[7],serial_buf[8],serial_buf[9],serial_buf[10],serial_buf[11],serial_buf[12],serial_buf[13]);
     }
+    else 
+        return false;
 
-    short trans_vel_temp = 0;
+    short transition = 0;
     static ros::Time current_time = ros::Time::now();
     static ros::Time previous_time = current_time;
     
     current_time = ros::Time::now();
     float sampling_time = (current_time - previous_time).toSec();
 
-    if(serial_buf[13] == Check_CRC(serial_buf, 13))
+    if((serial_buf[13] == Check_CRC(serial_buf, 13)) && (serial_buf[3] == 0x12))
     {
-        if(serial_buf[3] == 0x12)
-        {
-            trans_vel_temp = 0;
-            trans_vel_temp |= serial_buf[4]<<8;
-            trans_vel_temp |= serial_buf[5]; 
-            odom.vel.X = trans_vel_temp/1000.0;
+        transition = 0;
+        transition |= serial_buf[4] << 8;
+        transition |= serial_buf[5];
+        odom.vel.X = transition / 1000.0;
 
-            trans_vel_temp = 0;
-            trans_vel_temp |= serial_buf[6]<<8;
-            trans_vel_temp |= serial_buf[7];
-            odom.vel.Y = trans_vel_temp/1000.0;
+        transition = 0;
+        transition |= serial_buf[6] << 8;
+        transition |= serial_buf[7];
+        odom.vel.Y = transition / 1000.0;
 
-            trans_vel_temp = 0;
-            trans_vel_temp |= serial_buf[8]<<8;
-            trans_vel_temp |= serial_buf[9];
-            odom.vel.rad_yaw = (trans_vel_temp/100.0)*PI/180.0;  // Angle to radian
+        transition = 0;
+        transition |= serial_buf[8] << 8;
+        transition |= serial_buf[9];
+        odom.vel.rad_yaw = (transition / 100.0) * PI / 180.0; // Angle to radian
 
-            trans_vel_temp = 0;
-            trans_vel_temp |= serial_buf[10]<<8;
-            trans_vel_temp |= serial_buf[11];
-            odom.vel.Z = trans_vel_temp/1000.0;
+        transition = 0;
+        transition |= serial_buf[10] << 8;
+        transition |= serial_buf[11];
+        odom.vel.Z = transition / 1000.0;
 
-            odom.pose.X += (odom.vel.X * cos(odom.vel.rad_yaw) - odom.vel.Y * sin(odom.vel.rad_yaw)) * sampling_time;
-            odom.pose.Y += (odom.vel.X * sin(odom.vel.rad_yaw) + odom.vel.Y * cos(odom.vel.rad_yaw)) * sampling_time;
-            previous_time = current_time;
+        odom.pose.X += (odom.vel.X * cos(odom.vel.rad_yaw) - odom.vel.Y * sin(odom.vel.rad_yaw)) * sampling_time;
+        odom.pose.Y += (odom.vel.X * sin(odom.vel.rad_yaw) + odom.vel.Y * cos(odom.vel.rad_yaw)) * sampling_time;
+        previous_time = current_time;
 
-            return true;
-        }
+        return true;
     }
     return false;
 }
 
-void turn_on_tgrobot::OdomPub_TimerCallback(const ros::TimerEvent &event)
+void tgrobot_chassis::OdomPub_TimerCallback(const ros::TimerEvent &event)
 {
-    Odom_Tgrobot odom_data;
+    Odom_Chassis odom_data;
 
     if(GetOdometer_toSensor(odom_data) == true)
     {
@@ -181,7 +184,7 @@ void turn_on_tgrobot::OdomPub_TimerCallback(const ros::TimerEvent &event)
     }  
 }
 
-void turn_on_tgrobot::CMD_Vel_Callback(const geometry_msgs::Twist &twist_aux)
+void tgrobot_chassis::CMD_Vel_Callback(const geometry_msgs::Twist &twist_aux)
 {
     uint8_t cmd_data[12] = {0};
     short trans_temp = 0;
@@ -216,48 +219,39 @@ void turn_on_tgrobot::CMD_Vel_Callback(const geometry_msgs::Twist &twist_aux)
     }
 }
 
-void turn_on_tgrobot::BatteryPub_TimerCallback(const ros::TimerEvent &event)
+void tgrobot_chassis::BatteryPub_TimerCallback(const ros::TimerEvent &event)
 {
     uint8_t cmd_battery[6] = {0x5A, 0x06, 0x01, 0x07, 0x00, 0xe4};
 
-    try
-    {
-        tgrobot_serial_port.write(cmd_battery, sizeof(cmd_battery));
-    }
-    catch(const serial::IOException& e)
-    {
-        ROS_ERROR("%s \n", e.what());
-        ROS_ERROR_STREAM("Unable to write CMD[Battery].");
-    }
-
-    ros::Rate rate(100);
-    while(tgrobot_serial_port.waitReadable() == false)
-    {
-        rate.sleep();
-    }
+    Serial_SendCMD_waitRD(cmd_battery);
 
     uint8_t serial_buf[10] = {0}, count = 0;
-    if(count = tgrobot_serial_port.available())
+
+    if((count = tgrobot_serial_port.available()) == 10)
     {
         tgrobot_serial_port.read(serial_buf, sizeof(serial_buf));
         // ROS_INFO("[CMD:Battery] Serial port receive %d bytes.", count);
         // ROS_INFO("[CMD Battery]:%2x %2x %2x %2x %2x %2x %2x %2x %2x %2x",serial_buf[0],serial_buf[1],serial_buf[2],serial_buf[3],\
         // serial_buf[4],serial_buf[5],serial_buf[6],serial_buf[7],serial_buf[8],serial_buf[9]);
     }
+    else return;
 
     sensor_msgs::BatteryState battery_msgs;
-    short trans_voltage_temp = 0, trans_current_temp = 0;
+    short transition;
     if(serial_buf[9] == Check_CRC(serial_buf, 9))
     {
         if(serial_buf[3] == 0x08)
         {
-            trans_voltage_temp |= serial_buf[4]<<8;
-            trans_voltage_temp |= serial_buf[5]; 
-            trans_current_temp |= serial_buf[6]<<8;
-            trans_current_temp |= serial_buf[7];
+            transition = 0;
+            transition |= serial_buf[4]<<8;
+            transition |= serial_buf[5]; 
+            battery_msgs.voltage = transition/1000.0;
 
-            battery_msgs.voltage = trans_voltage_temp/1000.0;
-            battery_msgs.current = trans_current_temp/1000.0;
+            transition = 0;
+            transition |= serial_buf[6]<<8;
+            transition |= serial_buf[7];
+            battery_msgs.current = transition/1000.0;
+
             battery_pub.publish(battery_msgs);
         }
         else
@@ -267,7 +261,23 @@ void turn_on_tgrobot::BatteryPub_TimerCallback(const ros::TimerEvent &event)
     ROS_ERROR_STREAM("CMD[Battery]:CRC check error.");
 }
 
-uint8_t turn_on_tgrobot::Check_CRC(uint8_t *data, uint8_t len)
+void tgrobot_chassis::Serial_SendCMD_waitRD(const uint8_t* data)
+{
+    try {
+        tgrobot_serial_port.write(data, sizeof(data));
+    }
+    catch(const serial::IOException& e) {
+        ROS_ERROR("%s \n", e.what());
+        ROS_ERROR_STREAM("Unable to write CMD[Battery].");
+    }
+
+    ros::Rate rate(100);
+    while(tgrobot_serial_port.waitReadable() == false) {
+        rate.sleep();
+    }
+}
+
+uint8_t tgrobot_chassis::Check_CRC(uint8_t *data, uint8_t len)
 {
     uint8_t crc = 0x00;
     for (int i = 0; i < len; i++) {
@@ -283,4 +293,18 @@ uint8_t turn_on_tgrobot::Check_CRC(uint8_t *data, uint8_t len)
         }
     }
     return crc;
+}
+
+tgrobot_chassis::~tgrobot_chassis()
+{
+    try
+    {
+        tgrobot_serial_port.close();
+        ROS_INFO_STREAM("Tgrobot serial port close succeed!");
+    }
+    catch(const serial::IOException& e)
+    {
+        ROS_ERROR("%s \n", e.what());
+        ROS_ERROR_STREAM("Unable to close the serial port.");
+    }
 }

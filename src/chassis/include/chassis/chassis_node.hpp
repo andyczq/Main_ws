@@ -10,32 +10,34 @@
 #include <tf2/LinearMath/Quaternion.h>
 #include <nav_msgs/Odometry.h>
 #include <sensor_msgs/BatteryState.h>
-#include <string.h>
+#include <sensor_msgs/Range.h>
+// #include <string.h>
+#include <chassis_msgs/Ultrasonic.h>
 
 #define PI      3.1415926f
 
 // #define FRAME_HEAD  0x5A
 // #define FRAME_TAIL  0x00
-typedef struct __vel_tgrobot
+typedef struct __vel_chassis
 {
     float X,Y,Z,rad_yaw;
-}Vel_Tgrobot;
+}Vel_Chassis;
 
-typedef struct __pose_tgrobot
+typedef struct __pose_chassis
 {
     float X,Y;
-}Pose_Tgrobot;
+}Pose_Chassis;
 
-typedef struct __odom_tgrobot {
-    Vel_Tgrobot vel;
-    Pose_Tgrobot pose;
-}Odom_Tgrobot;
+typedef struct __odom_chassis {
+    Vel_Chassis vel;
+    Pose_Chassis pose;
+}Odom_Chassis;
 
-class turn_on_tgrobot 
+class tgrobot_chassis 
 {
 public:
-    turn_on_tgrobot();
-    ~turn_on_tgrobot();
+    tgrobot_chassis();
+    ~tgrobot_chassis();
     void tgrobot_controller();
 
 private:
@@ -44,15 +46,18 @@ private:
     int serial_baud_rate;
     ros::Subscriber twist_cmd_vel;
     void CMD_Vel_Callback(const geometry_msgs::Twist &twist_aux);
+    void Serial_SendCMD_waitRD(const uint8_t* data);
     uint8_t Check_CRC(uint8_t *data, uint8_t len);
 
-    ros::Publisher battery_pub, odometer_pub;
-    ros::Timer battery_timer, odometer_timer;
+    ros::Publisher battery_pub, odometer_pub, ultrasonic_pub;
+    ros::Timer battery_timer, odometer_timer, ultrasonic_timer;
 
     void BatteryPub_TimerCallback(const ros::TimerEvent &event);
 
-    bool GetOdometer_toSensor(Odom_Tgrobot &odom);
+    bool GetOdometer_toSensor(Odom_Chassis &odom);
     void OdomPub_TimerCallback(const ros::TimerEvent &event);
+
+    void UltrasonicPub_TimerCallback(const ros::TimerEvent &event);
 };
 
 #endif
