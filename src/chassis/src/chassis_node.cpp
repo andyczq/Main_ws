@@ -80,6 +80,14 @@ void tgrobot_chassis::UltrasonicPub_TimerCallback(const ros::TimerEvent &event)
     sonar.field_of_view = 0.15;
     sonar.min_range = 0.01;
     sonar.max_range = 0.40;
+
+    sonic_data[0] > 40 ? sonar.front_range = INFINITY : sonar.front_range = sonic_data[0]/100.0;
+    sonic_data[1] > 40 ? sonar.front_range = INFINITY : sonar.front_range = sonic_data[1]/100.0;
+    sonic_data[2] > 40 ? sonar.front_range = INFINITY : sonar.front_range = sonic_data[2]/100.0;
+    sonic_data[3] > 40 ? sonar.front_range = INFINITY : sonar.front_range = sonic_data[3]/100.0;
+
+    ultrasonic_pub.publish(sonar);
+
 }
 
 bool tgrobot_chassis::GetOdometer_toSensor(Odom_Chassis &odom)
