@@ -66,6 +66,46 @@ void tgrobot_chassis::IMUdataPub_TimerCallback(const ros::TimerEvent &event)
         tgrobot_serial_port.read(serial_buf, sizeof(serial_buf));
     }
     else return;
+    
+    int32_t transition;
+    if((serial_buf[37] == Check_CRC(serial_buf, 37)) && (serial_buf[3] == 0x14))
+    {
+        sensor_msgs::Imu imu;
+        imu.header.stamp = ros::Time::now();
+        imu.header.frame_id = "Imu";
+
+        transition = int32_t((serial_buf[4]<<24)|(serial_buf[5]<<16)|(serial_buf[6]<<8)|serial_buf[7]);
+        imu.angular_velocity.x = transition / 100000.0;
+
+        transition = int32_t((serial_buf[8]<<24)|(serial_buf[9]<<16)|(serial_buf[10]<<8)|serial_buf[11]);
+        imu.angular_velocity.y = transition / 100000.0;
+
+        transition = int32_t((serial_buf[12]<<24)|(serial_buf[13]<<16)|(serial_buf[14]<<8)|serial_buf[15]);
+        imu.angular_velocity.z = transition / 100000.0;
+
+        transition = int32_t((serial_buf[16]<<24)|(serial_buf[17]<<16)|(serial_buf[18]<<8)|serial_buf[19]);
+        imu.linear_acceleration.x = transition / 100000.0;
+
+        transition = int32_t((serial_buf[20]<<24)|(serial_buf[21]<<16)|(serial_buf[22]<<8)|serial_buf[23]);
+        imu.linear_acceleration.y = transition / 100000.0;
+
+        transition = int32_t((serial_buf[24]<<24)|(serial_buf[25]<<16)|(serial_buf[26]<<8)|serial_buf[27]);
+        imu.linear_acceleration.z = transition / 100000.0;
+
+        transition = int32_t((serial_buf[28]<<8)|serial_buf[29]);
+        imu.orientation.w = transition / 10000.0;
+
+        transition = int32_t((serial_buf[30]<<8)|serial_buf[31]);
+        imu.orientation.x = transition / 10000.0;
+
+        transition = int32_t((serial_buf[32]<<8)|serial_buf[33]);
+        imu.orientation.y = transition / 10000.0;
+
+        transition = int32_t((serial_buf[34]<<8)|serial_buf[35]);
+        imu.orientation.z = transition / 10000.0;
+        
+        imu_pub.publish(imu);
+    }  
 }
 
 void tgrobot_chassis::UltrasonicPub_TimerCallback(const ros::TimerEvent &event)
@@ -132,27 +172,23 @@ bool tgrobot_chassis::GetOdometer_toSensor(Odom_Chassis &odom)
     if((serial_buf[13] == Check_CRC(serial_buf, 13)) && (serial_buf[3] == 0x12))
     {
         transition = 0;
-        transition |= serial_buf[4] << 8;
-        transition |= serial_buf[5];
-        odom.vel.X = transition / 1000.0;
+        transition = short((serial_buf[4] << 8)|serial_buf[5]);
+        odom.vel.x = transition / 1000.0;
 
         transition = 0;
-        transition |= serial_buf[6] << 8;
-        transition |= serial_buf[7];
-        odom.vel.Y = transition / 1000.0;
+        transition = short((serial_buf[6] << 8)|serial_buf[7]);
+        odom.vel.y = transition / 1000.0;
 
         transition = 0;
-        transition |= serial_buf[8] << 8;
-        transition |= serial_buf[9];
+        transition = short((serial_buf[8] << 8)|serial_buf[9]);
         odom.vel.rad_yaw = (transition / 100.0) * PI / 180.0; // Angle to radian
 
         transition = 0;
-        transition |= serial_buf[10] << 8;
-        transition |= serial_buf[11];
-        odom.vel.Z = transition / 1000.0;
+        transition = short((serial_buf[10] << 8)|serial_buf[11]);
+        odom.vel.z = transition / 1000.0;
 
-        odom.pose.X += (odom.vel.X * cos(odom.vel.rad_yaw) - odom.vel.Y * sin(odom.vel.rad_yaw)) * sampling_time;
-        odom.pose.Y += (odom.vel.X * sin(odom.vel.rad_yaw) + odom.vel.Y * cos(odom.vel.rad_yaw)) * sampling_time;
+        odom.pose.x += (odom.vel.x * cos(odom.vel.rad_yaw) - odom.vel.y * sin(odom.vel.rad_yaw)) * sampling_time;
+        odom.pose.y += (odom.vel.x * sin(odom.vel.rad_yaw) + odom.vel.y * cos(odom.vel.rad_yaw)) * sampling_time;
         previous_time = current_time;
 
         return true;
@@ -178,25 +214,25 @@ void tgrobot_chassis::OdomPub_TimerCallback(const ros::TimerEvent &event)
         odom_msgs.header.stamp = ros::Time::now();
         odom_msgs.header.frame_id = odom_frame_id;
         odom_msgs.child_frame_id = base_frame_id;
-        odom_msgs.pose.pose.position.x = odom_data.pose.X;
-        odom_msgs.pose.pose.position.y = odom_data.pose.Y;
+        odom_msgs.pose.pose.position.x = odom_data.pose.x;
+        odom_msgs.pose.pose.position.y = odom_data.pose.y;
         odom_msgs.pose.pose.position.z = 0;
         odom_msgs.pose.pose.orientation = quat_odom;
 
-        odom_msgs.twist.twist.linear.x = odom_data.vel.X;
-        odom_msgs.twist.twist.linear.y = odom_data.vel.Y;
-        odom_msgs.twist.twist.angular.z = odom_data.vel.Z;
+        odom_msgs.twist.twist.linear.x = odom_data.vel.x;
+        odom_msgs.twist.twist.linear.y = odom_data.vel.y;
+        odom_msgs.twist.twist.angular.z = odom_data.vel.z;
 
         odometer_pub.publish(odom_msgs);
-        ROS_INFO("[Odometer] Odom_Pose: %.4f  %.4f   Odom_Twist:%.4f  %.4f  %.4f",odom_data.pose.X, odom_data.pose.Y, odom_data.vel.X, odom_data.vel.Y, odom_data.vel.Z);
+        ROS_INFO("[Odometer] Odom_Pose: %.4f  %.4f   Odom_Twist:%.4f  %.4f  %.4f",odom_data.pose.x, odom_data.pose.y, odom_data.vel.x, odom_data.vel.y, odom_data.vel.z);
 
         tf2_ros::TransformBroadcaster tf_broadcaster;
         geometry_msgs::TransformStamped tfs;
         tfs.header.stamp = ros::Time::now();
         tfs.header.frame_id = base_frame_id;
         tfs.child_frame_id = odom_frame_id;
-        tfs.transform.translation.x = odom_data.pose.X;
-        tfs.transform.translation.y = odom_data.pose.Y;
+        tfs.transform.translation.x = odom_data.pose.x;
+        tfs.transform.translation.y = odom_data.pose.y;
         tfs.transform.translation.z = 0.0;
         tfs.transform.rotation = quat_odom;
         tf_broadcaster.sendTransform(tfs);
@@ -265,14 +301,10 @@ void tgrobot_chassis::BatteryPub_TimerCallback(const ros::TimerEvent &event)
     {
         if(serial_buf[3] == 0x08)
         {
-            transition = 0;
-            transition |= serial_buf[4]<<8;
-            transition |= serial_buf[5]; 
+            transition = short((serial_buf[4] << 8)|serial_buf[5]);
             battery_msgs.voltage = transition/1000.0;
 
-            transition = 0;
-            transition |= serial_buf[6]<<8;
-            transition |= serial_buf[7];
+            transition = short((serial_buf[6] << 8)|serial_buf[7]);
             battery_msgs.current = transition/1000.0;
 
             battery_pub.publish(battery_msgs);

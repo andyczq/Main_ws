@@ -20,14 +20,12 @@
 
 // #define FRAME_HEAD  0x5A
 // #define FRAME_TAIL  0x00
-typedef struct __vel_chassis
-{
-    float X,Y,Z,rad_yaw;
+typedef struct __vel_chassis {
+    float x, y, z,rad_yaw;
 }Vel_Chassis;
 
-typedef struct __pose_chassis
-{
-    float X,Y;
+typedef struct __pose_chassis {
+    float x, y;
 }Pose_Chassis;
 
 typedef struct __odom_chassis {
