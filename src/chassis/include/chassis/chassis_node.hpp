@@ -11,6 +11,7 @@
 #include <nav_msgs/Odometry.h>
 #include <sensor_msgs/BatteryState.h>
 #include <sensor_msgs/Range.h>
+#include <sensor_msgs/Imu.h>
 // #include <string.h>
 #include <chassis_msgs/Ultrasonic.h>
 #include <math.h>
@@ -50,8 +51,8 @@ private:
     void Serial_SendCMD_waitRD(const uint8_t* data);
     uint8_t Check_CRC(uint8_t *data, uint8_t len);
 
-    ros::Publisher battery_pub, odometer_pub, ultrasonic_pub;
-    ros::Timer battery_timer, odometer_timer, ultrasonic_timer;
+    ros::Publisher battery_pub, odometer_pub, ultrasonic_pub, imu_pub;
+    ros::Timer battery_timer, odometer_timer, ultrasonic_timer, imu_timer;
 
     void BatteryPub_TimerCallback(const ros::TimerEvent &event);
 
@@ -59,6 +60,8 @@ private:
     void OdomPub_TimerCallback(const ros::TimerEvent &event);
 
     void UltrasonicPub_TimerCallback(const ros::TimerEvent &event);
+
+    void IMUdataPub_TimerCallback(const ros::TimerEvent &event);
 };
 
 #endif

@@ -43,6 +43,9 @@ tgrobot_chassis::tgrobot_chassis()
     // ultrasonic_pub = nh.advertise<sensor_msgs::Range>("range", 10);
     ultrasonic_pub = nh.advertise<chassis_msgs::Ultrasonic>("Sonar", 10);
     ultrasonic_timer = nh.createTimer(ros::Duration(1.0/10), &tgrobot_chassis::UltrasonicPub_TimerCallback, this);
+
+    imu_pub = nh.advertise<sensor_msgs::Imu>("IMU", 100);
+    imu_timer = nh.createTimer(ros::Duration(1.0/100), &tgrobot_chassis::IMUdataPub_TimerCallback, this);
 }
 
 void tgrobot_chassis::tgrobot_controller()
@@ -51,6 +54,18 @@ void tgrobot_chassis::tgrobot_controller()
     {
         ros::spinOnce();
     }
+}
+
+void tgrobot_chassis::IMUdataPub_TimerCallback(const ros::TimerEvent &event)
+{
+    uint8_t cmd_imu[6] = {0x5A, 0x06, 0x01, 0x13, 0x00, 0x33};
+    Serial_SendCMD_waitRD(cmd_imu);
+
+    uint8_t serial_buf[38] = {0}, count = 0;
+    if((count = tgrobot_serial_port.available()) == 10) {
+        tgrobot_serial_port.read(serial_buf, sizeof(serial_buf));
+    }
+    else return;
 }
 
 void tgrobot_chassis::UltrasonicPub_TimerCallback(const ros::TimerEvent &event)
