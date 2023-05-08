@@ -44,9 +44,10 @@ private:
     serial::Serial tgrobot_serial_port;
     std::string serial_port_name, odom_frame_id, base_frame_id;
     int serial_baud_rate;
+    bool serial_IDLE_flag;
     ros::Subscriber twist_cmd_vel;
     void CMD_Vel_Callback(const geometry_msgs::Twist &twist_aux);
-    void Serial_SendCMD_waitRD(const uint8_t* data);
+    bool Serial_SendCMD_waitRD(const uint8_t* w_data, uint8_t *r_data, uint8_t num);
     uint8_t Check_CRC(uint8_t *data, uint8_t len);
 
     ros::Publisher battery_pub, odometer_pub, ultrasonic_pub, imu_pub;
@@ -54,7 +55,7 @@ private:
 
     void BatteryPub_TimerCallback(const ros::TimerEvent &event);
 
-    bool GetOdometer_toSensor(Odom_Chassis &odom);
+    bool GetOdometer_toSensor(Odom_Chassis *odom);
     void OdomPub_TimerCallback(const ros::TimerEvent &event);
 
     void UltrasonicPub_TimerCallback(const ros::TimerEvent &event);
