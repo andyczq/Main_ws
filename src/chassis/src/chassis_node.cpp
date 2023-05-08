@@ -36,16 +36,16 @@ tgrobot_chassis::tgrobot_chassis()
 
     twist_cmd_vel = nh.subscribe("cmd_vel", 100, &tgrobot_chassis::CMD_Vel_Callback, this);
 
-    battery_pub = nh.advertise<sensor_msgs::BatteryState>("Battery", 10);
+    battery_pub = nh.advertise<sensor_msgs::BatteryState>("battery", 10);
     battery_timer = nh.createTimer(ros::Duration(1.0/2), &tgrobot_chassis::BatteryPub_TimerCallback, this);
     
-    odometer_pub = nh.advertise<nav_msgs::Odometry>("Odometer", 50);
+    odometer_pub = nh.advertise<nav_msgs::Odometry>("odometer", 50);
     odometer_timer = nh.createTimer(ros::Duration(1.0/50), &tgrobot_chassis::OdomPub_TimerCallback, this);
 
-    ultrasonic_pub = nh.advertise<chassis_msgs::Ultrasonic>("Sonar", 10);
+    ultrasonic_pub = nh.advertise<chassis::Ultrasonic>("sonar", 10);
     ultrasonic_timer = nh.createTimer(ros::Duration(1.0/10), &tgrobot_chassis::UltrasonicPub_TimerCallback, this);
 
-    imu_pub = nh.advertise<sensor_msgs::Imu>("IMU", 100);
+    imu_pub = nh.advertise<sensor_msgs::Imu>("imu", 100);
     imu_timer = nh.createTimer(ros::Duration(1.0/50), &tgrobot_chassis::IMUdataPub_TimerCallback, this);
 }
 
@@ -68,7 +68,8 @@ void tgrobot_chassis::IMUdataPub_TimerCallback(const ros::TimerEvent &event)
         {
             sensor_msgs::Imu imu;
             imu.header.stamp = ros::Time::now();
-            imu.header.frame_id = "Imu";
+            imu.header.frame_id = odom_frame_id;
+
             int32_t transition;
 
             transition = int32_t((serial_buf[4] << 24) | (serial_buf[5] << 16) | (serial_buf[6] << 8) | serial_buf[7]);
@@ -116,17 +117,17 @@ void tgrobot_chassis::UltrasonicPub_TimerCallback(const ros::TimerEvent &event)
         uint8_t sonic_data[4] = {0};
         if((serial_buf[9] == Check_CRC(serial_buf, 9)) && (serial_buf[3] == 0x1A))
         {
-            chassis_msgs::Ultrasonic sonar;
+            chassis::Ultrasonic sonar;
             sonar.header.stamp = ros::Time::now();
-            sonar.header.frame_id = "sonar";
+            sonar.header.frame_id = odom_frame_id;
             sonar.field_of_view = 0.15;
             sonar.min_range = 0.01;
             sonar.max_range = 0.40;
 
             serial_buf[4] > 40 ? sonar.front_range = INFINITY : sonar.front_range = serial_buf[4] / 100.0;
-            serial_buf[5] > 40 ? sonar.back_range = INFINITY : sonar.back_range = serial_buf[5] / 100.0;
-            serial_buf[6] > 40 ? sonar.left_range = INFINITY : sonar.left_range = serial_buf[6] / 100.0;
-            serial_buf[7] > 40 ? sonar.right_range = INFINITY : sonar.right_range = serial_buf[7] / 100.0;
+            serial_buf[5] > 40 ? sonar.right_range = INFINITY : sonar.right_range = serial_buf[5] / 100.0;
+            serial_buf[6] > 40 ? sonar.back_range = INFINITY : sonar.back_range = serial_buf[6] / 100.0;
+            serial_buf[7] > 40 ? sonar.left_range = INFINITY : sonar.left_range = serial_buf[7] / 100.0;
 
             ultrasonic_pub.publish(sonar);
         }

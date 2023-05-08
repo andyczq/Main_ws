@@ -13,7 +13,7 @@
 #include <sensor_msgs/Range.h>
 #include <sensor_msgs/Imu.h>
 // #include <string.h>
-#include <chassis_msgs/Ultrasonic.h>
+#include <chassis/Ultrasonic.h>
 // #include <math.h>
 
 #define PI      3.1415926f
