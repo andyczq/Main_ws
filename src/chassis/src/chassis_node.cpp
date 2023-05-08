@@ -40,7 +40,6 @@ tgrobot_chassis::tgrobot_chassis()
     odometer_pub = nh.advertise<nav_msgs::Odometry>("Odometer", 50);
     odometer_timer = nh.createTimer(ros::Duration(1.0/50), &tgrobot_chassis::OdomPub_TimerCallback, this);
 
-    // ultrasonic_pub = nh.advertise<sensor_msgs::Range>("range", 10);
     ultrasonic_pub = nh.advertise<chassis_msgs::Ultrasonic>("Sonar", 10);
     ultrasonic_timer = nh.createTimer(ros::Duration(1.0/10), &tgrobot_chassis::UltrasonicPub_TimerCallback, this);
 
