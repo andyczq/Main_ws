@@ -14,8 +14,8 @@ tgrobot_chassis::tgrobot_chassis()
     ros::NodeHandle nh;
     nh.param<std::string>("Serial_port_name", serial_port_name, "/dev/chassis_serial");
     nh.param<int>("Serial_baud_rate", serial_baud_rate, 115200);
-    nh.param<std::string>("odom_frame_id", odom_frame_id, "odom_combined");
-    nh.param<std::string>("base_frame_id", base_frame_id, "base_footprint");
+    nh.param<std::string>("odom_frame_id", odom_frame_id, "odom");
+    nh.param<std::string>("base_frame_id", base_frame_id, "base_link");
 
     try
     {
@@ -41,6 +41,7 @@ tgrobot_chassis::tgrobot_chassis()
     
     odometer_pub = nh.advertise<nav_msgs::Odometry>("odom", 50);
     odometer_timer = nh.createTimer(ros::Duration(1.0/50), &tgrobot_chassis::OdomPub_TimerCallback, this);
+    path_pub = nh.advertise<nav_msgs::Path>("path",50);
 
     ultrasonic_pub = nh.advertise<chassis::Ultrasonic>("sonar", 10);
     ultrasonic_timer = nh.createTimer(ros::Duration(1.0/10), &tgrobot_chassis::UltrasonicPub_TimerCallback, this);
@@ -188,6 +189,7 @@ void tgrobot_chassis::OdomPub_TimerCallback(const ros::TimerEvent &event)
 
     if(GetOdometer_toSensor(&odom_data) == true)
     {
+        ros::Time current_time = ros::Time::now();
         tf2::Quaternion qtn;
         qtn.setRPY(0, 0, odom_data.vel.rad_yaw);
         geometry_msgs::Quaternion quat_odom;
@@ -197,7 +199,7 @@ void tgrobot_chassis::OdomPub_TimerCallback(const ros::TimerEvent &event)
         quat_odom.w = qtn.getW();
         
         nav_msgs::Odometry odom_msgs;
-        odom_msgs.header.stamp = ros::Time::now();
+        odom_msgs.header.stamp = current_time;
         odom_msgs.header.frame_id = odom_frame_id;
         odom_msgs.child_frame_id = base_frame_id;
         odom_msgs.pose.pose.position.x = odom_data.pose.x;
@@ -212,11 +214,20 @@ void tgrobot_chassis::OdomPub_TimerCallback(const ros::TimerEvent &event)
         odometer_pub.publish(odom_msgs);
         // ROS_INFO("[Odometer] Odom_Pose: %.4f  %.4f   Odom_Twist:%.4f  %.4f  %.4f",odom_data.pose.x, odom_data.pose.y, odom_data.vel.x, odom_data.vel.y, odom_data.vel.z);
 
+        geometry_msgs::PoseStamped pose_stamped;
+        pose_stamped.header.stamp = current_time;
+        pose_stamped.header.frame_id = odom_frame_id;
+        pose_stamped.pose = odom_msgs.pose.pose;
+        nav_msgs::Path path;
+        path.header = pose_stamped.header;
+        path.poses.push_back(pose_stamped);
+        path_pub.publish(path);
+
         static tf2_ros::TransformBroadcaster tf_broadcaster;
         geometry_msgs::TransformStamped tfs;
         tfs.header.stamp = ros::Time::now();
-        tfs.header.frame_id = base_frame_id;
-        tfs.child_frame_id = odom_frame_id;
+        tfs.header.frame_id = odom_frame_id;
+        tfs.child_frame_id = base_frame_id;
         tfs.transform.translation.x = odom_data.pose.x;
         tfs.transform.translation.y = odom_data.pose.y;
         tfs.transform.translation.z = 0.0;
