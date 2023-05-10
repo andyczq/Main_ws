@@ -14,8 +14,8 @@ tgrobot_chassis::tgrobot_chassis()
     ros::NodeHandle nh;
     nh.param<std::string>("Serial_port_name", serial_port_name, "/dev/chassis_serial");
     nh.param<int>("Serial_baud_rate", serial_baud_rate, 115200);
-    nh.param<std::string>("odom_frame_id", odom_frame_id, "odom_chassis");
-    nh.param<std::string>("base_frame_id", base_frame_id, "tea_garden");
+    nh.param<std::string>("odom_frame_id", odom_frame_id, "odom");
+    nh.param<std::string>("base_frame_id", base_frame_id, "base_link");
 
     try
     {
@@ -198,8 +198,8 @@ void tgrobot_chassis::OdomPub_TimerCallback(const ros::TimerEvent &event)
         
         nav_msgs::Odometry odom_msgs;
         odom_msgs.header.stamp = ros::Time::now();
-        odom_msgs.header.frame_id = base_frame_id;
-        odom_msgs.child_frame_id = odom_frame_id;
+        odom_msgs.header.frame_id = odom_frame_id;
+        odom_msgs.child_frame_id = base_frame_id;
         odom_msgs.pose.pose.position.x = odom_data.pose.x;
         odom_msgs.pose.pose.position.y = odom_data.pose.y;
         odom_msgs.pose.pose.position.z = 0;
@@ -215,8 +215,8 @@ void tgrobot_chassis::OdomPub_TimerCallback(const ros::TimerEvent &event)
         static tf2_ros::TransformBroadcaster tf_broadcaster;
         geometry_msgs::TransformStamped tfs;
         tfs.header.stamp = ros::Time::now();
-        tfs.header.frame_id = base_frame_id;
-        tfs.child_frame_id = odom_frame_id;
+        tfs.header.frame_id = odom_frame_id;
+        tfs.child_frame_id = base_frame_id;
         tfs.transform.translation.x = odom_data.pose.x;
         tfs.transform.translation.y = odom_data.pose.y;
         tfs.transform.translation.z = 0.0;
