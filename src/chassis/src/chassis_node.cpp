@@ -371,4 +371,5 @@ tgrobot_chassis::~tgrobot_chassis()
         ROS_ERROR("%s \n", e.what());
         ROS_ERROR_STREAM("Unable to close the serial port.");
     }
+    ros::shutdown();
 }
