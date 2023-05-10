@@ -41,7 +41,7 @@ tgrobot_chassis::tgrobot_chassis()
     
     odometer_pub = nh.advertise<nav_msgs::Odometry>("odom", 50);
     odometer_timer = nh.createTimer(ros::Duration(1.0/50), &tgrobot_chassis::OdomPub_TimerCallback, this);
-    path_pub = nh.advertise<nav_msgs::Path>("path",50);
+    path_pub = nh.advertise<nav_msgs::Path>("path", 50, true);
 
     ultrasonic_pub = nh.advertise<chassis::Ultrasonic>("sonar", 10);
     ultrasonic_timer = nh.createTimer(ros::Duration(1.0/10), &tgrobot_chassis::UltrasonicPub_TimerCallback, this);
@@ -189,7 +189,6 @@ void tgrobot_chassis::OdomPub_TimerCallback(const ros::TimerEvent &event)
 
     if(GetOdometer_toSensor(&odom_data) == true)
     {
-        ros::Time current_time = ros::Time::now();
         tf2::Quaternion qtn;
         qtn.setRPY(0, 0, odom_data.vel.rad_yaw);
         geometry_msgs::Quaternion quat_odom;
@@ -197,6 +196,9 @@ void tgrobot_chassis::OdomPub_TimerCallback(const ros::TimerEvent &event)
         quat_odom.y = qtn.getY();
         quat_odom.z = qtn.getZ();
         quat_odom.w = qtn.getW();
+
+        ros::Time current_time;
+        current_time = ros::Time::now();
         
         nav_msgs::Odometry odom_msgs;
         odom_msgs.header.stamp = current_time;
@@ -218,14 +220,14 @@ void tgrobot_chassis::OdomPub_TimerCallback(const ros::TimerEvent &event)
         pose_stamped.header.stamp = current_time;
         pose_stamped.header.frame_id = odom_frame_id;
         pose_stamped.pose = odom_msgs.pose.pose;
-        nav_msgs::Path path;
+        static nav_msgs::Path path;
         path.header = pose_stamped.header;
         path.poses.push_back(pose_stamped);
         path_pub.publish(path);
 
         static tf2_ros::TransformBroadcaster tf_broadcaster;
         geometry_msgs::TransformStamped tfs;
-        tfs.header.stamp = ros::Time::now();
+        tfs.header.stamp = current_time;
         tfs.header.frame_id = odom_frame_id;
         tfs.child_frame_id = base_frame_id;
         tfs.transform.translation.x = odom_data.pose.x;
