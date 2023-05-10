@@ -24,11 +24,9 @@ tgrobot_chassis::tgrobot_chassis()
         serial::Timeout serial_timeout = serial::Timeout::simpleTimeout(2000);
         tgrobot_serial_port.setTimeout(serial_timeout);
         tgrobot_serial_port.open();
-        serial_IDLE_flag = true;
     }
     catch(const serial::IOException& e)
     {
-        serial_IDLE_flag = false;
         ROS_ERROR_STREAM("Tgrobot can not open serial port,Please check the serial port cable! "); 
         return;
     }
@@ -41,7 +39,6 @@ tgrobot_chassis::tgrobot_chassis()
     
     odometer_pub = nh.advertise<nav_msgs::Odometry>("odom", 50);
     odometer_timer = nh.createTimer(ros::Duration(1.0/50), &tgrobot_chassis::OdomPub_TimerCallback, this);
-    path_pub = nh.advertise<nav_msgs::Path>("path", 50, true);
 
     ultrasonic_pub = nh.advertise<chassis::Ultrasonic>("sonar", 10);
     ultrasonic_timer = nh.createTimer(ros::Duration(1.0/10), &tgrobot_chassis::UltrasonicPub_TimerCallback, this);
@@ -216,15 +213,16 @@ void tgrobot_chassis::OdomPub_TimerCallback(const ros::TimerEvent &event)
         odometer_pub.publish(odom_msgs);
         // ROS_INFO("[Odometer] Odom_Pose: %.4f  %.4f   Odom_Twist:%.4f  %.4f  %.4f",odom_data.pose.x, odom_data.pose.y, odom_data.vel.x, odom_data.vel.y, odom_data.vel.z);
 
-        geometry_msgs::PoseStamped pose_stamped;
-        pose_stamped.header.stamp = current_time;
-        pose_stamped.header.frame_id = odom_frame_id;
-        pose_stamped.pose = odom_msgs.pose.pose;
+        // Function: show driving track, will produce a large delay and need to be rewritten
+        // geometry_msgs::PoseStamped pose_stamped;
+        // pose_stamped.header.stamp = current_time;
+        // pose_stamped.header.frame_id = odom_frame_id;
+        // pose_stamped.pose = odom_msgs.pose.pose;
         
-        static nav_msgs::Path path;
-        path.header = pose_stamped.header;
-        path.poses.push_back(pose_stamped);
-        path_pub.publish(path);
+        // static nav_msgs::Path path;
+        // path.header = pose_stamped.header;
+        // path.poses.push_back(pose_stamped);
+        // path_pub.publish(path);
 
         static tf2_ros::TransformBroadcaster tf_broadcaster;
         geometry_msgs::TransformStamped tfs;

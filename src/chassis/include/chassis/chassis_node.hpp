@@ -8,16 +8,12 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <nav_msgs/Odometry.h>
-#include <nav_msgs/Path.h>
 #include <sensor_msgs/BatteryState.h>
 #include <sensor_msgs/Imu.h>
 #include "chassis/Ultrasonic.h"
-#include <rviz_visual_tools/rviz_visual_tools.h>
 
 #define PI      3.1415926f
 
-// #define FRAME_HEAD  0x5A
-// #define FRAME_TAIL  0x00
 typedef struct __vel_chassis {
     float x, y, z,rad_yaw;
 }Vel_Chassis;
@@ -42,13 +38,13 @@ private:
     serial::Serial tgrobot_serial_port;
     std::string serial_port_name, base_frame_id, odom_frame_id;
     int serial_baud_rate;
-    bool serial_IDLE_flag;
     ros::Subscriber twist_cmd_vel;
+
     void CMD_Vel_Callback(const geometry_msgs::Twist &twist_aux);
     bool Serial_SendCMD_waitRD(const uint8_t* w_data, uint8_t *r_data, uint8_t num);
     uint8_t Check_CRC(uint8_t *data, uint8_t len);
 
-    ros::Publisher battery_pub, odometer_pub, path_pub, ultrasonic_pub, imu_pub;
+    ros::Publisher battery_pub, odometer_pub, ultrasonic_pub, imu_pub;
     ros::Timer battery_timer, odometer_timer, ultrasonic_timer, imu_timer;
 
     void BatteryPub_TimerCallback(const ros::TimerEvent &event);
@@ -59,6 +55,7 @@ private:
     void UltrasonicPub_TimerCallback(const ros::TimerEvent &event);
 
     void IMUdataPub_TimerCallback(const ros::TimerEvent &event);
+
 };
 
 #endif

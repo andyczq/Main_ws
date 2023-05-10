@@ -3,3 +3,5 @@
 build/
 devel/
 src/CMakeLists.txt
+devel_isolated/
+build_isolated/
