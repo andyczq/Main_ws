@@ -12,6 +12,7 @@
 #include <sensor_msgs/BatteryState.h>
 #include <sensor_msgs/Imu.h>
 #include "chassis/Ultrasonic.h"
+#include <rviz_visual_tools/rviz_visual_tools.h>
 
 #define PI      3.1415926f
 

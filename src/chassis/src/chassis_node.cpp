@@ -220,6 +220,7 @@ void tgrobot_chassis::OdomPub_TimerCallback(const ros::TimerEvent &event)
         pose_stamped.header.stamp = current_time;
         pose_stamped.header.frame_id = odom_frame_id;
         pose_stamped.pose = odom_msgs.pose.pose;
+        
         static nav_msgs::Path path;
         path.header = pose_stamped.header;
         path.poses.push_back(pose_stamped);
