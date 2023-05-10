@@ -8,6 +8,7 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <nav_msgs/Odometry.h>
+#include <nav_msgs/Path.h>
 #include <sensor_msgs/BatteryState.h>
 #include <sensor_msgs/Imu.h>
 #include "chassis/Ultrasonic.h"
@@ -46,7 +47,7 @@ private:
     bool Serial_SendCMD_waitRD(const uint8_t* w_data, uint8_t *r_data, uint8_t num);
     uint8_t Check_CRC(uint8_t *data, uint8_t len);
 
-    ros::Publisher battery_pub, odometer_pub, ultrasonic_pub, imu_pub;
+    ros::Publisher battery_pub, odometer_pub, path_pub, ultrasonic_pub, imu_pub;
     ros::Timer battery_timer, odometer_timer, ultrasonic_timer, imu_timer;
 
     void BatteryPub_TimerCallback(const ros::TimerEvent &event);
