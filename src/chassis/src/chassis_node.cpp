@@ -74,7 +74,7 @@ void Chassis::IMUdataPub_TimerCallback(const ros::TimerEvent &event)
     uint8_t cmd_imu[6] = {0x5A, 0x06, 0x01, 0x13, 0x00, 0x33};
     uint8_t serial_buf[38] = {0}, count = 38;
 
-    if(Serial_SendCMD_waitRD(cmd_imu, serial_buf, count))
+    if(SendCMD_WaitResponse(cmd_imu, serial_buf, count))
     {
         if ((serial_buf[37] == Check_CRC(serial_buf, 37)) && (serial_buf[3] == 0x14))
         {
@@ -127,7 +127,7 @@ void Chassis::UltrasonicPub_TimerCallback(const ros::TimerEvent &event)
     uint8_t cmd_sonic[6] = {0x5A, 0x06, 0x01, 0x19, 0x00, 0xD4};
     uint8_t serial_buf[10] = {0}, count = 10;
 
-    if(Serial_SendCMD_waitRD(cmd_sonic, serial_buf, count))
+    if(SendCMD_WaitResponse(cmd_sonic, serial_buf, count))
     {
         uint8_t sonic_data[4] = {0};
         if((serial_buf[9] == Check_CRC(serial_buf, 9)) && (serial_buf[3] == 0x1A))
@@ -157,7 +157,7 @@ bool Chassis::GetOdometer_toSensor(Odom_Chassis *odom)
     uint8_t cmd_odom[6] = {0x5A, 0x06, 0x01, 0x11, 0x00, 0xA2};
     uint8_t serial_buf[14] = {0}, count = 14;
 
-    if(Serial_SendCMD_waitRD(cmd_odom, serial_buf, count))
+    if(SendCMD_WaitResponse(cmd_odom, serial_buf, count))
     {
         static ros::Time current_time = ros::Time::now();
         static ros::Time previous_time = current_time;
@@ -294,7 +294,7 @@ void Chassis::BatteryPub_TimerCallback(const ros::TimerEvent &event)
     uint8_t serial_buf[10] = {0}, count = 10;
     
 
-    if(Serial_SendCMD_waitRD(cmd_battery, serial_buf, count))
+    if(SendCMD_WaitResponse(cmd_battery, serial_buf, count))
     {
         if((serial_buf[9] == Check_CRC(serial_buf, 9)) && (serial_buf[3] == 0x08))
         {
@@ -317,7 +317,7 @@ void Chassis::BatteryPub_TimerCallback(const ros::TimerEvent &event)
     }
 }
 
-bool Chassis::Serial_SendCMD_waitRD(const uint8_t* w_data, uint8_t *r_data, uint8_t num)
+bool Chassis::SendCMD_WaitResponse(const uint8_t* w_data, uint8_t *r_data, uint8_t num)
 {
     try {
         serial_port.write(w_data, sizeof(w_data));

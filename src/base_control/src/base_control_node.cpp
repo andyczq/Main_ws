@@ -3,6 +3,21 @@
 #include <geometry_msgs/Twist.h>
 #include <nav_msgs/Odometry.h>
 
+#define PI      3.1415926f
+
+typedef struct __vel_odom {
+    float x, euler_yaw;
+}Vel_Odom;
+
+typedef struct __pose_odom {
+    float x, y;
+}Pose_Odom;
+
+typedef struct __odom_data {
+    Vel_Odom vel;
+    Pose_Odom pose;
+}OdomData;
+
 class BaseControl {
     public:
         BaseControl();
@@ -10,6 +25,9 @@ class BaseControl {
         void SubTwist_Callback(const geometry_msgs::Twist &twist);
         void PubOdom_TimerCallback(const ros::TimerEvent &event);
         uint8_t Check_CRC(const uint8_t *data);
+        bool GetOdometer_toSensor(OdomData &odom);
+        bool SendCMD_WaitResponse(const uint8_t* cmd, uint8_t &data);
+        bool Write_SerialPort(uint8_t *data);
 
     private:
         ros::NodeHandle nh;
@@ -17,6 +35,7 @@ class BaseControl {
         ros::Subscriber twist_sub;
         ros::Publisher odom_pub;
         ros::Timer odom_timer;
+        OdomData odom;
 };
 
 BaseControl::BaseControl()
@@ -64,9 +83,55 @@ BaseControl::~BaseControl()
     ros::shutdown();
 }
 
+inline bool BaseControl::Write_SerialPort(uint8_t *data)
+{
+    try {
+        serial_port.write(data, sizeof(data));
+    }
+    catch (const serial::IOException &e)
+    {
+        ROS_ERROR("%s \n", e.what());
+        return false;
+    }
+    return true;
+}
+
+bool BaseControl::GetOdometer_toSensor(OdomData &odom)
+{
+    uint8_t cmd[6] = {0x5A, 0x06, 0x01, 0x11, 0x00, 0xA2};
+    uint8_t serial_buf[14] = {0};
+
+    if(Write_SerialPort(cmd))
+    {
+        while ((serial_port.waitReadable() == false) || (serial_port.available() != 14))
+        {
+            uint8_t times = 0;
+            ros::Time::sleepUntil(ros::Time(0.001));
+            if (times++ > 10) // 10ms
+            {
+                ROS_ERROR_STREAM("Wait serial feedback timeout!");
+                serial_port.flush();
+                return false;
+            }
+        }
+        try {
+            serial_port.read(serial_buf, 14);
+        }
+        catch (const serial::IOException &e)
+        {
+            ROS_ERROR("%s \n", e.what());
+            return false;
+        }
+    }
+
+    
+    
+}
+
 void BaseControl::PubOdom_TimerCallback(const ros::TimerEvent &event)
 {
-
+    GetOdometer_toSensor(odom);
+    
 }
 
 void BaseControl::SubTwist_Callback(const geometry_msgs::Twist &_twist)
@@ -119,6 +184,11 @@ uint8_t BaseControl::Check_CRC(const uint8_t *data)
         }
     }
     return crc;
+}
+
+bool BaseControl::SendCMD_WaitResponse(const uint8_t* cmd, uint8_t &data)
+{
+
 }
 
 int main(int argc, char **argv)

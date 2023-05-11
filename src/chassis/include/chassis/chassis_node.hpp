@@ -34,7 +34,7 @@ class Chassis
         ~Chassis();
 
         void CMD_Vel_Callback(const geometry_msgs::Twist &twist_aux);
-        bool Serial_SendCMD_waitRD(const uint8_t* w_data, uint8_t *r_data, uint8_t num);
+        bool SendCMD_WaitResponse(const uint8_t* w_data, uint8_t *r_data, uint8_t num);
         uint8_t Check_CRC(uint8_t *data, uint8_t len);
         void BatteryPub_TimerCallback(const ros::TimerEvent &event);
         bool GetOdometer_toSensor(Odom_Chassis *odom);
