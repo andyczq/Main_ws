@@ -2,7 +2,9 @@
 .vscode/settings.json
 build/
 devel/
+logs/
 src/CMakeLists.txt
 devel_isolated/
 build_isolated/
 temp/
+.catkin_tools/

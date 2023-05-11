@@ -10,7 +10,7 @@
 #include <nav_msgs/Odometry.h>
 #include <sensor_msgs/BatteryState.h>
 #include <sensor_msgs/Imu.h>
-#include "chassis/Ultrasonic.h"
+#include <chassis_msgs/Ultrasonic.h>
 
 #define PI      3.1415926f
 

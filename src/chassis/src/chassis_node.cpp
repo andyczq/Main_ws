@@ -11,7 +11,7 @@ int main(int argc, char **argv)
 
 tgrobot_chassis::tgrobot_chassis()
 {
-    ros::NodeHandle nh;
+    ros::NodeHandle nh("~");
     nh.param<std::string>("serial_port_name", serial_port_name, "/dev/chassis_serial");
     nh.param<int>("serial_baud_rate", serial_baud_rate, 115200);
     nh.param<std::string>("odom_frame_id", odom_frame_id, "odom");
@@ -46,7 +46,6 @@ tgrobot_chassis::tgrobot_chassis()
         ROS_INFO_STREAM("Odometer topic is published.");
     }
     
-    
     if(pub_battery)
     {
         battery_pub = nh.advertise<sensor_msgs::BatteryState>("battery", 10);
@@ -56,7 +55,7 @@ tgrobot_chassis::tgrobot_chassis()
     
     if(pub_ultrasonic)
     {
-        ultrasonic_pub = nh.advertise<chassis::Ultrasonic>("sonar", 10);
+        ultrasonic_pub = nh.advertise<chassis_msgs::Ultrasonic>("sonar", 10);
         ultrasonic_timer = nh.createTimer(ros::Duration(1.0/10), &tgrobot_chassis::UltrasonicPub_TimerCallback, this);
         ROS_INFO_STREAM("Ultrasonic topic is published.");
     }
@@ -140,7 +139,7 @@ void tgrobot_chassis::UltrasonicPub_TimerCallback(const ros::TimerEvent &event)
         uint8_t sonic_data[4] = {0};
         if((serial_buf[9] == Check_CRC(serial_buf, 9)) && (serial_buf[3] == 0x1A))
         {
-            chassis::Ultrasonic sonar;
+            chassis_msgs::Ultrasonic sonar;
             sonar.header.stamp = ros::Time::now();
             sonar.header.frame_id = odom_frame_id;
             sonar.field_of_view = 0.15;
