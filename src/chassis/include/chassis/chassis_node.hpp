@@ -1,7 +1,7 @@
 #ifndef __CHASSIS_NODE_HPP_
 #define __CHASSIS_NODE_HPP_
 
-#include "ros/ros.h"
+#include <ros/ros.h>
 #include <serial/serial.h>
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Pose.h>
@@ -43,7 +43,8 @@ class Chassis
         void IMUdataPub_TimerCallback(const ros::TimerEvent &event);
 
     private:
-        serial::Serial tgrobot_serial_port;
+        ros::NodeHandle node, pnode;
+        serial::Serial serial_port;
         std::string serial_port_name, base_frame_id, odom_frame_id;
         int serial_baud_rate;
         ros::Subscriber twist_cmd_vel;

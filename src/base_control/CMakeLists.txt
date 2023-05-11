@@ -10,6 +10,7 @@ project(base_control)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
+  serial
 )
 
 ## System dependencies are found with CMake's conventions

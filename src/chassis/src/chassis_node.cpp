@@ -11,39 +11,39 @@ int main(int argc, char **argv)
     return 0;
 }
 
-Chassis::Chassis(ros::NodeHandle _comm_nh, ros::NodeHandle _param_nh)
+Chassis::Chassis(ros::NodeHandle _comm_nh, ros::NodeHandle _param_nh) : node(_comm_nh), pnode(_param_nh)
 {
-    _param_nh.param<std::string>("serial_port_name", serial_port_name, "/dev/chassis_serial");
-    _param_nh.param<int>("serial_baud_rate", serial_baud_rate, 115200);
-    _param_nh.param<std::string>("odom_frame_id", odom_frame_id, "odom");
-    _param_nh.param<std::string>("base_frame_id", base_frame_id, "base_link");
+    pnode.param<std::string>("serial_port_name", serial_port_name, "/dev/chassis_serial");
+    pnode.param<int>("serial_baud_rate", serial_baud_rate, 115200);
+    pnode.param<std::string>("odom_frame_id", odom_frame_id, "odom");
+    pnode.param<std::string>("base_frame_id", base_frame_id, "base_link");
 
-    _param_nh.param<bool>("pub_odometer", pub_odometer, true);
-    _param_nh.param<bool>("pub_battery", pub_battery, false);
-    _param_nh.param<bool>("pub_ultrasonic", pub_ultrasonic, false);
-    _param_nh.param<bool>("pub_imu", pub_imu, false);
+    pnode.param<bool>("pub_odometer", pub_odometer, true);
+    pnode.param<bool>("pub_battery", pub_battery, false);
+    pnode.param<bool>("pub_ultrasonic", pub_ultrasonic, false);
+    pnode.param<bool>("pub_imu", pub_imu, false);
 
     try
     {
-        tgrobot_serial_port.setPort(serial_port_name);
-        tgrobot_serial_port.setBaudrate(serial_baud_rate);
+        serial_port.setPort(serial_port_name);
+        serial_port.setBaudrate(serial_baud_rate);
         serial::Timeout serial_timeout = serial::Timeout::simpleTimeout(2000);
-        tgrobot_serial_port.setTimeout(serial_timeout);
-        tgrobot_serial_port.open();
+        serial_port.setTimeout(serial_timeout);
+        serial_port.open();
     }
     catch(const serial::IOException& e)
     {
         ROS_ERROR_STREAM("Tgrobot can not open serial port,Please check the serial port cable! "); 
         return;
     }
-    ROS_INFO_STREAM("Tgrobot serial port open succeed!");
+    ROS_INFO_STREAM("Chassis serial port enabled successfully.");
 
-    twist_cmd_vel = _comm_nh.subscribe("cmd_vel", 100, &Chassis::CMD_Vel_Callback, this);
+    twist_cmd_vel = node.subscribe("cmd_vel", 100, &Chassis::CMD_Vel_Callback, this);
 
     if(pub_odometer)
     {
-        odometer_pub = _comm_nh.advertise<nav_msgs::Odometry>("odom", 50);
-        odometer_timer = _comm_nh.createTimer(ros::Duration(1.0/50), &Chassis::OdomPub_TimerCallback, this);
+        odometer_pub = node.advertise<nav_msgs::Odometry>("odom", 50);
+        odometer_timer = node.createTimer(ros::Duration(1.0/50), &Chassis::OdomPub_TimerCallback, this);
         ROS_INFO_STREAM("Odometer topic is published.");
     }
     
@@ -279,7 +279,7 @@ void Chassis::CMD_Vel_Callback(const geometry_msgs::Twist &twist_aux)
     cmd_data[11] = Check_CRC(cmd_data, 11);
 
     try {
-        tgrobot_serial_port.write(cmd_data, sizeof(cmd_data));
+        serial_port.write(cmd_data, sizeof(cmd_data));
     }
     catch (const serial::IOException &e)
     {
@@ -320,7 +320,7 @@ void Chassis::BatteryPub_TimerCallback(const ros::TimerEvent &event)
 bool Chassis::Serial_SendCMD_waitRD(const uint8_t* w_data, uint8_t *r_data, uint8_t num)
 {
     try {
-        tgrobot_serial_port.write(w_data, sizeof(w_data));
+        serial_port.write(w_data, sizeof(w_data));
     }
     catch (const serial::IOException &e)
     {
@@ -329,7 +329,7 @@ bool Chassis::Serial_SendCMD_waitRD(const uint8_t* w_data, uint8_t *r_data, uint
         return false;
     }
 
-    while ((tgrobot_serial_port.waitReadable() == false) || (tgrobot_serial_port.available() != num))
+    while ((serial_port.waitReadable() == false) || (serial_port.available() != num))
     {
         uint8_t times = 0;
         ros::Time::sleepUntil(ros::Time(0.001));
@@ -337,18 +337,18 @@ bool Chassis::Serial_SendCMD_waitRD(const uint8_t* w_data, uint8_t *r_data, uint
         {
             ROS_INFO("[CMD Switch]: 0x%02x", w_data[3]);
             ROS_ERROR_STREAM("[Serial CMD]: Wait serial feedback timeout!");
-            tgrobot_serial_port.flush();
+            serial_port.flush();
             return false;
         }
     }
 
-    if(tgrobot_serial_port.available() == num)
+    if(serial_port.available() == num)
     {
-        tgrobot_serial_port.read(r_data, num);
+        serial_port.read(r_data, num);
         return true;
     }
     else {
-        tgrobot_serial_port.flush();
+        serial_port.flush();
         ROS_ERROR_STREAM("[Serial CMD]: Read serial data not match the num.");
     }
     
@@ -375,9 +375,18 @@ uint8_t Chassis::Check_CRC(uint8_t *data, uint8_t len)
 
 Chassis::~Chassis()
 {
+    geometry_msgs::Twist twist;
+    twist.linear.x = 0;
+    twist.linear.y = 0;
+    twist.linear.z = 0;
+    twist.angular.x = 0;
+    twist.angular.y = 0;
+    twist.angular.z = 0;
+    CMD_Vel_Callback(twist);
+
     try
     {
-        tgrobot_serial_port.close();
+        serial_port.close();
         ROS_INFO_STREAM("Tgrobot serial port close succeed!");
     }
     catch(const serial::IOException& e)
