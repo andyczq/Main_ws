@@ -27,36 +27,30 @@ typedef struct __odom_chassis {
     Pose_Chassis pose;
 }Odom_Chassis;
 
-class tgrobot_chassis 
+class Chassis 
 {
-public:
-    tgrobot_chassis();
-    ~tgrobot_chassis();
-    void tgrobot_controller();
+    public:
+        Chassis(ros::NodeHandle comm_nh, ros::NodeHandle param_nh);
+        ~Chassis();
 
-private:
-    serial::Serial tgrobot_serial_port;
-    std::string serial_port_name, base_frame_id, odom_frame_id;
-    int serial_baud_rate;
-    ros::Subscriber twist_cmd_vel;
+        void CMD_Vel_Callback(const geometry_msgs::Twist &twist_aux);
+        bool Serial_SendCMD_waitRD(const uint8_t* w_data, uint8_t *r_data, uint8_t num);
+        uint8_t Check_CRC(uint8_t *data, uint8_t len);
+        void BatteryPub_TimerCallback(const ros::TimerEvent &event);
+        bool GetOdometer_toSensor(Odom_Chassis *odom);
+        void OdomPub_TimerCallback(const ros::TimerEvent &event);
+        void UltrasonicPub_TimerCallback(const ros::TimerEvent &event);
+        void IMUdataPub_TimerCallback(const ros::TimerEvent &event);
 
-    void CMD_Vel_Callback(const geometry_msgs::Twist &twist_aux);
-    bool Serial_SendCMD_waitRD(const uint8_t* w_data, uint8_t *r_data, uint8_t num);
-    uint8_t Check_CRC(uint8_t *data, uint8_t len);
+    private:
+        serial::Serial tgrobot_serial_port;
+        std::string serial_port_name, base_frame_id, odom_frame_id;
+        int serial_baud_rate;
+        ros::Subscriber twist_cmd_vel;
 
-    bool pub_odometer, pub_battery, pub_ultrasonic, pub_imu;
-    ros::Publisher battery_pub, odometer_pub, ultrasonic_pub, imu_pub;
-    ros::Timer battery_timer, odometer_timer, ultrasonic_timer, imu_timer;
-
-    void BatteryPub_TimerCallback(const ros::TimerEvent &event);
-
-    bool GetOdometer_toSensor(Odom_Chassis *odom);
-    void OdomPub_TimerCallback(const ros::TimerEvent &event);
-
-    void UltrasonicPub_TimerCallback(const ros::TimerEvent &event);
-
-    void IMUdataPub_TimerCallback(const ros::TimerEvent &event);
-
+        bool pub_odometer, pub_battery, pub_ultrasonic, pub_imu;
+        ros::Publisher battery_pub, odometer_pub, ultrasonic_pub, imu_pub;
+        ros::Timer battery_timer, odometer_timer, ultrasonic_timer, imu_timer;
 };
 
 #endif

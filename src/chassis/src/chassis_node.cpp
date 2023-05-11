@@ -3,24 +3,25 @@
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "chassis");
-    tgrobot_chassis tg;
-    tg.tgrobot_controller();
+    
+    Chassis chassis(ros::NodeHandle(), ros::NodeHandle("~"));
+
+    ros::spin();
     
     return 0;
 }
 
-tgrobot_chassis::tgrobot_chassis()
+Chassis::Chassis(ros::NodeHandle _comm_nh, ros::NodeHandle _param_nh)
 {
-    ros::NodeHandle nh("~");
-    nh.param<std::string>("serial_port_name", serial_port_name, "/dev/chassis_serial");
-    nh.param<int>("serial_baud_rate", serial_baud_rate, 115200);
-    nh.param<std::string>("odom_frame_id", odom_frame_id, "odom");
-    nh.param<std::string>("base_frame_id", base_frame_id, "base_link");
+    _param_nh.param<std::string>("serial_port_name", serial_port_name, "/dev/chassis_serial");
+    _param_nh.param<int>("serial_baud_rate", serial_baud_rate, 115200);
+    _param_nh.param<std::string>("odom_frame_id", odom_frame_id, "odom");
+    _param_nh.param<std::string>("base_frame_id", base_frame_id, "base_link");
 
-    nh.param<bool>("pub_odometer", pub_odometer, true);
-    nh.param<bool>("pub_battery", pub_battery, false);
-    nh.param<bool>("pub_ultrasonic", pub_ultrasonic, false);
-    nh.param<bool>("pub_imu", pub_imu, false);
+    _param_nh.param<bool>("pub_odometer", pub_odometer, true);
+    _param_nh.param<bool>("pub_battery", pub_battery, false);
+    _param_nh.param<bool>("pub_ultrasonic", pub_ultrasonic, false);
+    _param_nh.param<bool>("pub_imu", pub_imu, false);
 
     try
     {
@@ -37,46 +38,38 @@ tgrobot_chassis::tgrobot_chassis()
     }
     ROS_INFO_STREAM("Tgrobot serial port open succeed!");
 
-    twist_cmd_vel = nh.subscribe("cmd_vel", 100, &tgrobot_chassis::CMD_Vel_Callback, this);
+    twist_cmd_vel = _comm_nh.subscribe("cmd_vel", 100, &Chassis::CMD_Vel_Callback, this);
 
     if(pub_odometer)
     {
-        odometer_pub = nh.advertise<nav_msgs::Odometry>("odom", 50);
-        odometer_timer = nh.createTimer(ros::Duration(1.0/50), &tgrobot_chassis::OdomPub_TimerCallback, this);
+        odometer_pub = _comm_nh.advertise<nav_msgs::Odometry>("odom", 50);
+        odometer_timer = _comm_nh.createTimer(ros::Duration(1.0/50), &Chassis::OdomPub_TimerCallback, this);
         ROS_INFO_STREAM("Odometer topic is published.");
     }
     
     if(pub_battery)
     {
-        battery_pub = nh.advertise<sensor_msgs::BatteryState>("battery", 10);
-        battery_timer = nh.createTimer(ros::Duration(1.0/2), &tgrobot_chassis::BatteryPub_TimerCallback, this);
+        battery_pub = _comm_nh.advertise<sensor_msgs::BatteryState>("battery", 10);
+        battery_timer = _comm_nh.createTimer(ros::Duration(1.0/2), &Chassis::BatteryPub_TimerCallback, this);
         ROS_INFO_STREAM("Battery topic is published.");
     }
     
     if(pub_ultrasonic)
     {
-        ultrasonic_pub = nh.advertise<chassis_msgs::Ultrasonic>("sonar", 10);
-        ultrasonic_timer = nh.createTimer(ros::Duration(1.0/10), &tgrobot_chassis::UltrasonicPub_TimerCallback, this);
+        ultrasonic_pub = _comm_nh.advertise<chassis_msgs::Ultrasonic>("sonar", 10);
+        ultrasonic_timer = _comm_nh.createTimer(ros::Duration(1.0/10), &Chassis::UltrasonicPub_TimerCallback, this);
         ROS_INFO_STREAM("Ultrasonic topic is published.");
     }
 
     if(pub_imu)
     {
-        imu_pub = nh.advertise<sensor_msgs::Imu>("imu", 100);
-        imu_timer = nh.createTimer(ros::Duration(1.0/100), &tgrobot_chassis::IMUdataPub_TimerCallback, this);
+        imu_pub = _comm_nh.advertise<sensor_msgs::Imu>("imu", 100);
+        imu_timer = _comm_nh.createTimer(ros::Duration(1.0/100), &Chassis::IMUdataPub_TimerCallback, this);
         ROS_INFO_STREAM("IMU topic is published.");
     }
 }
 
-void tgrobot_chassis::tgrobot_controller()
-{
-    while(ros::ok())
-    {
-        ros::spinOnce();
-    }
-}
-
-void tgrobot_chassis::IMUdataPub_TimerCallback(const ros::TimerEvent &event)
+void Chassis::IMUdataPub_TimerCallback(const ros::TimerEvent &event)
 {
     uint8_t cmd_imu[6] = {0x5A, 0x06, 0x01, 0x13, 0x00, 0x33};
     uint8_t serial_buf[38] = {0}, count = 38;
@@ -129,7 +122,7 @@ void tgrobot_chassis::IMUdataPub_TimerCallback(const ros::TimerEvent &event)
     }
 }
 
-void tgrobot_chassis::UltrasonicPub_TimerCallback(const ros::TimerEvent &event)
+void Chassis::UltrasonicPub_TimerCallback(const ros::TimerEvent &event)
 {
     uint8_t cmd_sonic[6] = {0x5A, 0x06, 0x01, 0x19, 0x00, 0xD4};
     uint8_t serial_buf[10] = {0}, count = 10;
@@ -159,7 +152,7 @@ void tgrobot_chassis::UltrasonicPub_TimerCallback(const ros::TimerEvent &event)
     }
 }
 
-bool tgrobot_chassis::GetOdometer_toSensor(Odom_Chassis *odom)
+bool Chassis::GetOdometer_toSensor(Odom_Chassis *odom)
 {
     uint8_t cmd_odom[6] = {0x5A, 0x06, 0x01, 0x11, 0x00, 0xA2};
     uint8_t serial_buf[14] = {0}, count = 14;
@@ -201,7 +194,7 @@ bool tgrobot_chassis::GetOdometer_toSensor(Odom_Chassis *odom)
     return false;
 }
 
-void tgrobot_chassis::OdomPub_TimerCallback(const ros::TimerEvent &event)
+void Chassis::OdomPub_TimerCallback(const ros::TimerEvent &event)
 {
     static Odom_Chassis odom_data = {0};
 
@@ -261,7 +254,7 @@ void tgrobot_chassis::OdomPub_TimerCallback(const ros::TimerEvent &event)
     }  
 }
 
-void tgrobot_chassis::CMD_Vel_Callback(const geometry_msgs::Twist &twist_aux)
+void Chassis::CMD_Vel_Callback(const geometry_msgs::Twist &twist_aux)
 {
     uint8_t cmd_data[12] = {0};
     short trans_temp = 0;
@@ -295,7 +288,7 @@ void tgrobot_chassis::CMD_Vel_Callback(const geometry_msgs::Twist &twist_aux)
     }
 }
 
-void tgrobot_chassis::BatteryPub_TimerCallback(const ros::TimerEvent &event)
+void Chassis::BatteryPub_TimerCallback(const ros::TimerEvent &event)
 {
     uint8_t cmd_battery[6] = {0x5A, 0x06, 0x01, 0x07, 0x00, 0xe4};
     uint8_t serial_buf[10] = {0}, count = 10;
@@ -324,7 +317,7 @@ void tgrobot_chassis::BatteryPub_TimerCallback(const ros::TimerEvent &event)
     }
 }
 
-bool tgrobot_chassis::Serial_SendCMD_waitRD(const uint8_t* w_data, uint8_t *r_data, uint8_t num)
+bool Chassis::Serial_SendCMD_waitRD(const uint8_t* w_data, uint8_t *r_data, uint8_t num)
 {
     try {
         tgrobot_serial_port.write(w_data, sizeof(w_data));
@@ -362,7 +355,7 @@ bool tgrobot_chassis::Serial_SendCMD_waitRD(const uint8_t* w_data, uint8_t *r_da
     return false;
 }
 
-uint8_t tgrobot_chassis::Check_CRC(uint8_t *data, uint8_t len)
+uint8_t Chassis::Check_CRC(uint8_t *data, uint8_t len)
 {
     uint8_t crc = 0x00;
     for (int i = 0; i < len; i++) {
@@ -380,7 +373,7 @@ uint8_t tgrobot_chassis::Check_CRC(uint8_t *data, uint8_t len)
     return crc;
 }
 
-tgrobot_chassis::~tgrobot_chassis()
+Chassis::~Chassis()
 {
     try
     {
