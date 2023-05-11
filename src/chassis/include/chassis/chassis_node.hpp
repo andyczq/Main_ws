@@ -44,6 +44,7 @@ private:
     bool Serial_SendCMD_waitRD(const uint8_t* w_data, uint8_t *r_data, uint8_t num);
     uint8_t Check_CRC(uint8_t *data, uint8_t len);
 
+    bool pub_odometer, pub_battery, pub_ultrasonic, pub_imu;
     ros::Publisher battery_pub, odometer_pub, ultrasonic_pub, imu_pub;
     ros::Timer battery_timer, odometer_timer, ultrasonic_timer, imu_timer;
 

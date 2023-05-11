@@ -12,10 +12,15 @@ int main(int argc, char **argv)
 tgrobot_chassis::tgrobot_chassis()
 {
     ros::NodeHandle nh;
-    nh.param<std::string>("Serial_port_name", serial_port_name, "/dev/chassis_serial");
-    nh.param<int>("Serial_baud_rate", serial_baud_rate, 115200);
+    nh.param<std::string>("serial_port_name", serial_port_name, "/dev/chassis_serial");
+    nh.param<int>("serial_baud_rate", serial_baud_rate, 115200);
     nh.param<std::string>("odom_frame_id", odom_frame_id, "odom");
     nh.param<std::string>("base_frame_id", base_frame_id, "base_link");
+
+    nh.param<bool>("pub_odometer", pub_odometer, true);
+    nh.param<bool>("pub_battery", pub_battery, false);
+    nh.param<bool>("pub_ultrasonic", pub_ultrasonic, false);
+    nh.param<bool>("pub_imu", pub_imu, false);
 
     try
     {
@@ -34,17 +39,34 @@ tgrobot_chassis::tgrobot_chassis()
 
     twist_cmd_vel = nh.subscribe("cmd_vel", 100, &tgrobot_chassis::CMD_Vel_Callback, this);
 
-    battery_pub = nh.advertise<sensor_msgs::BatteryState>("battery", 10);
-    battery_timer = nh.createTimer(ros::Duration(1.0/2), &tgrobot_chassis::BatteryPub_TimerCallback, this);
+    if(pub_odometer)
+    {
+        odometer_pub = nh.advertise<nav_msgs::Odometry>("odom", 50);
+        odometer_timer = nh.createTimer(ros::Duration(1.0/50), &tgrobot_chassis::OdomPub_TimerCallback, this);
+        ROS_INFO_STREAM("Odometer topic is published.");
+    }
     
-    odometer_pub = nh.advertise<nav_msgs::Odometry>("odom", 50);
-    odometer_timer = nh.createTimer(ros::Duration(1.0/50), &tgrobot_chassis::OdomPub_TimerCallback, this);
+    
+    if(pub_battery)
+    {
+        battery_pub = nh.advertise<sensor_msgs::BatteryState>("battery", 10);
+        battery_timer = nh.createTimer(ros::Duration(1.0/2), &tgrobot_chassis::BatteryPub_TimerCallback, this);
+        ROS_INFO_STREAM("Battery topic is published.");
+    }
+    
+    if(pub_ultrasonic)
+    {
+        ultrasonic_pub = nh.advertise<chassis::Ultrasonic>("sonar", 10);
+        ultrasonic_timer = nh.createTimer(ros::Duration(1.0/10), &tgrobot_chassis::UltrasonicPub_TimerCallback, this);
+        ROS_INFO_STREAM("Ultrasonic topic is published.");
+    }
 
-    ultrasonic_pub = nh.advertise<chassis::Ultrasonic>("sonar", 10);
-    ultrasonic_timer = nh.createTimer(ros::Duration(1.0/10), &tgrobot_chassis::UltrasonicPub_TimerCallback, this);
-
-    imu_pub = nh.advertise<sensor_msgs::Imu>("imu", 100);
-    imu_timer = nh.createTimer(ros::Duration(1.0/100), &tgrobot_chassis::IMUdataPub_TimerCallback, this);
+    if(pub_imu)
+    {
+        imu_pub = nh.advertise<sensor_msgs::Imu>("imu", 100);
+        imu_timer = nh.createTimer(ros::Duration(1.0/100), &tgrobot_chassis::IMUdataPub_TimerCallback, this);
+        ROS_INFO_STREAM("IMU topic is published.");
+    }
 }
 
 void tgrobot_chassis::tgrobot_controller()

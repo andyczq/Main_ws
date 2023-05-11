@@ -3,9 +3,6 @@
 build/
 devel/
 src/CMakeLists.txt
-<<<<<<< HEAD
 devel_isolated/
 build_isolated/
-=======
 temp/
->>>>>>> c777d529b78edbb56719bcbaa49efd23449bfc57

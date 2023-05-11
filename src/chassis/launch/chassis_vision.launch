@@ -1,0 +1,26 @@
+<launch>
+    <arg name="camera"  default="true"/>
+    <arg name="odomter" default="true"/>
+    <arg name="battery" default="false"/>
+    <arg name="ultrasonic" default="false"/>
+    <arg name="imu" default="false"/>
+
+    <node pkg="chassis" type="chassis_node" name="chassis" output="screen">
+        <param name="serial_port_name" value="/dev/chassis_serial"/>
+        <param name="serial_baud_rate" value="115200"/>
+        <param name="odom_frame_id" value="odom"/>
+        <param name="base_frame_id" value="base_link"/>
+        
+        <param name="pub_odomter" value="$(arg odomter)"/>
+        <param name="pub_battery" value="$(arg battery)"/>
+        <param name="pub_ultrasonic" value="$(arg ultrasonic)"/>
+        <param name="pub_imu" value="$(arg imu)"/>
+    </node>
+
+    <group if="$(eval camera)">
+        <node pkg="uvc_camera"  type="uvc_camera_node"   name="uvc_camera"  output="screen">
+        <param name="device"    value="/dev/video0"/>
+        </node>
+    </group>
+    
+</launch>
