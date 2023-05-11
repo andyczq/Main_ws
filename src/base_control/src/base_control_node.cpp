@@ -2,6 +2,7 @@
 #include <serial/serial.h>
 #include <geometry_msgs/Twist.h>
 #include <nav_msgs/Odometry.h>
+#include <tf2/LinearMath/Quaternion.h>
 
 #define PI      3.1415926f
 
@@ -35,7 +36,8 @@ class BaseControl {
         ros::Subscriber twist_sub;
         ros::Publisher odom_pub;
         ros::Timer odom_timer;
-        OdomData odom;
+        OdomData odometer;
+        ros::Time now_time, last_time;
 };
 
 BaseControl::BaseControl()
@@ -57,6 +59,8 @@ BaseControl::BaseControl()
     twist_sub = nh.subscribe("cmd_vel", 100, &BaseControl::SubTwist_Callback, this);
     odom_pub = nh.advertise<nav_msgs::Odometry>("odom", 50);
     odom_timer = nh.createTimer(ros::Duration(1.0/50), &BaseControl::PubOdom_TimerCallback, this);
+    now_time = ros::Time::now();
+    last_time = now_time;
 }
 
 BaseControl::~BaseControl()
@@ -124,13 +128,48 @@ bool BaseControl::GetOdometer_toSensor(OdomData &odom)
         }
     }
 
-    
-    
+    now_time = ros::Time::now();
+    float sampling_time = (now_time - last_time).toSec();
+    last_time = now_time;
+    short transition;
+
+    if ((serial_buf[13] == Check_CRC(serial_buf)) && (serial_buf[3] == 0x12))
+    {
+        transition = short((serial_buf[4] << 8) | serial_buf[5]);
+        odom.vel.x = transition / 1000.0;
+
+        transition = short((serial_buf[8] << 8) | serial_buf[9]);
+        odom.vel.euler_yaw = (transition / 100.0) * PI / 180.0; // Angle to radian
+
+        odom.pose.x += (odom.vel.x * cos(odom.vel.euler_yaw)) * sampling_time;
+        odom.pose.y += (odom.vel.x * sin(odom.vel.euler_yaw)) * sampling_time;
+
+        return true;
+    }
+    return false;
 }
 
 void BaseControl::PubOdom_TimerCallback(const ros::TimerEvent &event)
 {
-    GetOdometer_toSensor(odom);
+    if(GetOdometer_toSensor(odometer) == true)
+    {
+        tf2::Quaternion qtn;
+        qtn.setRPY(0, 0, odometer.vel.euler_yaw);
+        geometry_msgs::Quaternion quat;
+        quat.x = qtn.getX();
+        quat.y = qtn.getY();
+        quat.z = qtn.getZ();
+        quat.w = qtn.getW();
+
+        nav_msgs::Odometry odom_msgs;
+        odom_msgs.header.stamp = now_time;
+        odom_msgs.header.frame_id = "odom";
+        odom_msgs.child_frame_id = "move_base";
+        odom_msgs.pose.pose.position.x = odometer.pose.x;
+        odom_msgs.pose.pose.position.y = odometer.pose.y;
+        odom_msgs.pose.pose.position.z = 0;
+        odom_msgs.pose.pose.orientation = quat;     
+    }
     
 }
 
