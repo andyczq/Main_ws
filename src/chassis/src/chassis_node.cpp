@@ -5,7 +5,9 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "chassis");
     
     Chassis chassis(ros::NodeHandle(), ros::NodeHandle("~"));
-
+    // Override the default ros sigint handler.
+    // This must be set after the first NodeHandle is created.
+    signal(SIGINT, mySigintHandler);
     ros::spin();
     
     return 0;
@@ -373,6 +375,13 @@ uint8_t Chassis::Check_CRC(const uint8_t *data, uint8_t len)
     return crc;
 }
 
+inline void mySigintHandler(int sig)
+{
+    ROS_INFO("ROS node shutting down.");
+    // All the default sigint handler does is call shutdown()
+    ros::shutdown();
+}
+
 Chassis::~Chassis()
 {
     geometry_msgs::Twist twist;
@@ -387,12 +396,11 @@ Chassis::~Chassis()
     try
     {
         serial_port.close();
-        ROS_INFO_STREAM("Tgrobot serial port close succeed!");
+        ROS_INFO_STREAM("Serial port closed!");
     }
-    catch(const serial::IOException& e)
+    catch (const serial::IOException &e)
     {
         ROS_ERROR("%s \n", e.what());
         ROS_ERROR_STREAM("Unable to close the serial port.");
     }
-    ros::shutdown();
 }

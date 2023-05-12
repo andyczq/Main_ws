@@ -8,11 +8,15 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <nav_msgs/Odometry.h>
+// #include <nav_msgs/Path.h>
 #include <sensor_msgs/BatteryState.h>
 #include <sensor_msgs/Imu.h>
 #include <chassis_msgs/Ultrasonic.h>
+#include <signal.h>
 
 #define PI      3.1415926f
+
+inline void mySigintHandler(int sig);
 
 typedef struct __vel_chassis {
     float x, y, z,rad_yaw;
