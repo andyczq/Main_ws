@@ -342,20 +342,20 @@ bool Chassis::SendCMD_WaitResponse(const uint8_t* w_data, uint8_t *r_data, uint8
         }
     }
 
-    if(serial_port.available() == num)
+    try
     {
         serial_port.read(r_data, num);
         return true;
     }
-    else {
+    catch(const serial::IOException &e) {
         serial_port.flush();
-        ROS_ERROR_STREAM("[Serial CMD]: Read serial data not match the num.");
+        ROS_ERROR("%s \n", e.what());
     }
     
     return false;
 }
 
-uint8_t Chassis::Check_CRC(uint8_t *data, uint8_t len)
+uint8_t Chassis::Check_CRC(const uint8_t *data, uint8_t len)
 {
     uint8_t crc = 0x00;
     for (int i = 0; i < len; i++) {

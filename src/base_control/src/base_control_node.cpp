@@ -3,11 +3,12 @@
 #include <geometry_msgs/Twist.h>
 #include <nav_msgs/Odometry.h>
 #include <tf2/LinearMath/Quaternion.h>
+#include <tf2_ros/transform_broadcaster.h>
 
 #define PI      3.1415926f
 
 typedef struct __vel_odom {
-    float x, euler_yaw;
+    float x, z, euler_yaw;
 }Vel_Odom;
 
 typedef struct __pose_odom {
@@ -25,9 +26,8 @@ class BaseControl {
         ~BaseControl();
         void SubTwist_Callback(const geometry_msgs::Twist &twist);
         void PubOdom_TimerCallback(const ros::TimerEvent &event);
-        uint8_t Check_CRC(const uint8_t *data);
+        uint8_t Check_CRC(const uint8_t *data, uint8_t len);
         bool GetOdometer_toSensor(OdomData &odom);
-        bool SendCMD_WaitResponse(const uint8_t* cmd, uint8_t &data);
         bool Write_SerialPort(uint8_t *data);
 
     private:
@@ -38,6 +38,7 @@ class BaseControl {
         ros::Timer odom_timer;
         OdomData odometer;
         ros::Time now_time, last_time;
+        tf2_ros::TransformBroadcaster tf_broadcaster;
 };
 
 BaseControl::BaseControl()
@@ -57,6 +58,7 @@ BaseControl::BaseControl()
     ROS_INFO_STREAM("Chassis serial port enabled successfully.");
 
     twist_sub = nh.subscribe("cmd_vel", 100, &BaseControl::SubTwist_Callback, this);
+    odometer = {0};
     odom_pub = nh.advertise<nav_msgs::Odometry>("odom", 50);
     odom_timer = nh.createTimer(ros::Duration(1.0/50), &BaseControl::PubOdom_TimerCallback, this);
     now_time = ros::Time::now();
@@ -105,7 +107,7 @@ bool BaseControl::GetOdometer_toSensor(OdomData &odom)
     uint8_t cmd[6] = {0x5A, 0x06, 0x01, 0x11, 0x00, 0xA2};
     uint8_t serial_buf[14] = {0};
 
-    if(Write_SerialPort(cmd))
+    if(Write_SerialPort(cmd) == true)
     {
         while ((serial_port.waitReadable() == false) || (serial_port.available() != 14))
         {
@@ -133,7 +135,7 @@ bool BaseControl::GetOdometer_toSensor(OdomData &odom)
     last_time = now_time;
     short transition;
 
-    if ((serial_buf[13] == Check_CRC(serial_buf)) && (serial_buf[3] == 0x12))
+    if ((serial_buf[13] == Check_CRC(serial_buf, 13)) && (serial_buf[3] == 0x12))
     {
         transition = short((serial_buf[4] << 8) | serial_buf[5]);
         odom.vel.x = transition / 1000.0;
@@ -141,11 +143,22 @@ bool BaseControl::GetOdometer_toSensor(OdomData &odom)
         transition = short((serial_buf[8] << 8) | serial_buf[9]);
         odom.vel.euler_yaw = (transition / 100.0) * PI / 180.0; // Angle to radian
 
+        transition = short((serial_buf[10] << 8)|serial_buf[11]);
+        odom.vel.z = transition / 1000.0;
+
         odom.pose.x += (odom.vel.x * cos(odom.vel.euler_yaw)) * sampling_time;
         odom.pose.y += (odom.vel.x * sin(odom.vel.euler_yaw)) * sampling_time;
 
         return true;
     }
+    else
+    {
+        ROS_ERROR_STREAM("Check data error!");
+        ROS_INFO("Receive DATA: %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x", serial_buf[0],
+          serial_buf[1], serial_buf[2], serial_buf[3], serial_buf[4], serial_buf[5], serial_buf[6], serial_buf[7],\
+          serial_buf[8], serial_buf[9], serial_buf[10], serial_buf[11], serial_buf[12], serial_buf[13]);
+    }
+        
     return false;
 }
 
@@ -168,9 +181,25 @@ void BaseControl::PubOdom_TimerCallback(const ros::TimerEvent &event)
         odom_msgs.pose.pose.position.x = odometer.pose.x;
         odom_msgs.pose.pose.position.y = odometer.pose.y;
         odom_msgs.pose.pose.position.z = 0;
-        odom_msgs.pose.pose.orientation = quat;     
+        odom_msgs.pose.pose.orientation = quat;
+        odom_msgs.twist.twist.linear.x = odometer.vel.x;
+        odom_msgs.twist.twist.linear.y = 0;
+        odom_msgs.twist.twist.angular.z = odometer.vel.z;
+        odom_pub.publish(odom_msgs);
+
+        geometry_msgs::TransformStamped tfs;
+        tfs.header.stamp = now_time;
+        tfs.header.frame_id = "odom";
+        tfs.child_frame_id = "move_base";
+        tfs.transform.translation.x = odometer.pose.x;
+        tfs.transform.translation.y = odometer.pose.y;
+        tfs.transform.translation.z = 0;
+        tfs.transform.rotation = quat;
+        tf_broadcaster.sendTransform(tfs); 
     }
-    
+    else {
+        ROS_ERROR_STREAM("Get odometer data error.");
+    }  
 }
 
 void BaseControl::SubTwist_Callback(const geometry_msgs::Twist &_twist)
@@ -195,7 +224,7 @@ void BaseControl::SubTwist_Callback(const geometry_msgs::Twist &_twist)
     cmd_data[9] = trans_temp&0xFF;
 
     cmd_data[10] = 0x00;
-    cmd_data[11] = Check_CRC(cmd_data);
+    cmd_data[11] = Check_CRC(cmd_data, 11);
 
     try {
         serial_port.write(cmd_data, sizeof(cmd_data));
@@ -207,10 +236,10 @@ void BaseControl::SubTwist_Callback(const geometry_msgs::Twist &_twist)
     }
 }
 
-uint8_t BaseControl::Check_CRC(const uint8_t *data)
+uint8_t BaseControl::Check_CRC(const uint8_t *data, uint8_t len)
 {
     uint8_t crc = 0x00;
-    for (int i = 0; i < sizeof(data)-1; i++) {
+    for (int i = 0; i < len; i++) {
         crc ^= data[i];
         for (int j = 0; j < 8; j++) {
             if (crc & 0x01) {
@@ -223,11 +252,6 @@ uint8_t BaseControl::Check_CRC(const uint8_t *data)
         }
     }
     return crc;
-}
-
-bool BaseControl::SendCMD_WaitResponse(const uint8_t* cmd, uint8_t &data)
-{
-
 }
 
 int main(int argc, char **argv)
