@@ -12,7 +12,7 @@
 #define PI      3.1415926f
 
 typedef struct __vel_odom {
-    float x, z, euler_yaw;
+    float x, z, theta;
 }Vel_Odom;
 
 typedef struct __pose_odom {

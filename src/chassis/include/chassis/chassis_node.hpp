@@ -19,7 +19,7 @@
 inline void mySigintHandler(int sig);
 
 typedef struct __vel_chassis {
-    float x, y, z,rad_yaw;
+    float x, y, z,theta;
 }Vel_Chassis;
 
 typedef struct __pose_chassis {

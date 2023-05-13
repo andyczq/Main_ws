@@ -100,13 +100,13 @@ bool BaseControl::GetOdometer_toSensor(OdomData &odom)
         odom.vel.x = transition / 1000.0;
 
         transition = short((serial_buf[8] << 8) | serial_buf[9]);
-        odom.vel.euler_yaw = (transition / 100.0) * PI / 180.0; // Angle to radian
+        odom.vel.theta = (transition / 100.0) * PI / 180.0; // Angle to radian
 
         transition = short((serial_buf[10] << 8)|serial_buf[11]);
         odom.vel.z = transition / 1000.0;
 
-        odom.pose.x += (odom.vel.x * cos(odom.vel.euler_yaw)) * sampling_time;
-        odom.pose.y += (odom.vel.x * sin(odom.vel.euler_yaw)) * sampling_time;
+        odom.pose.x += (odom.vel.x * cos(odom.vel.theta)) * sampling_time;
+        odom.pose.y += (odom.vel.x * sin(odom.vel.theta)) * sampling_time;
 
         return true;
     }
@@ -126,7 +126,7 @@ void BaseControl::PubOdom_TimerCallback(const ros::TimerEvent &event)
     if(GetOdometer_toSensor(odometer) == true)
     {
         tf2::Quaternion qtn;
-        qtn.setRPY(0, 0, odometer.vel.euler_yaw);
+        qtn.setRPY(0, 0, odometer.vel.theta);
         geometry_msgs::Quaternion quat;
         quat.x = qtn.getX();
         quat.y = qtn.getY();

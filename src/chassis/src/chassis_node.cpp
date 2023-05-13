@@ -178,13 +178,13 @@ bool Chassis::GetOdometer_toSensor(Odom_Chassis *odom)
             odom->vel.y = transition / 1000.0;
 
             transition = short((serial_buf[8] << 8)|serial_buf[9]);
-            odom->vel.rad_yaw = (transition / 100.0) * PI / 180.0; // Angle to radian
+            odom->vel.theta = (transition / 100.0) * PI / 180.0; // Angle to radian
 
             transition = short((serial_buf[10] << 8)|serial_buf[11]);
             odom->vel.z = transition / 1000.0;
 
-            odom->pose.x += (odom->vel.x * cos(odom->vel.rad_yaw) - odom->vel.y * sin(odom->vel.rad_yaw)) * sampling_time;
-            odom->pose.y += (odom->vel.x * sin(odom->vel.rad_yaw) + odom->vel.y * cos(odom->vel.rad_yaw)) * sampling_time;
+            odom->pose.x += (odom->vel.x * cos(odom->vel.theta) - odom->vel.y * sin(odom->vel.theta)) * sampling_time;
+            odom->pose.y += (odom->vel.x * sin(odom->vel.theta) + odom->vel.y * cos(odom->vel.theta)) * sampling_time;
             
             // ROS_INFO("[Odometer] Rad_yam: %.4f  Pose.x: %.4f  Pose.y:%.4f   Twist.x:%.4f   Twist.y:%.4f   Twist.z:%.4f", odom->vel.rad_yaw,odom->pose.x,odom->pose.y,odom->vel.x,odom->vel.y,odom->vel.z);
             return true;
@@ -203,7 +203,7 @@ void Chassis::OdomPub_TimerCallback(const ros::TimerEvent &event)
     if(GetOdometer_toSensor(&odom_data) == true)
     {
         tf2::Quaternion qtn;
-        qtn.setRPY(0, 0, odom_data.vel.rad_yaw);
+        qtn.setRPY(0, 0, odom_data.vel.theta);
         geometry_msgs::Quaternion quat_odom;
         quat_odom.x = qtn.getX();
         quat_odom.y = qtn.getY();

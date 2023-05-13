@@ -1,4 +1,5 @@
 <launch>
+    <arg name="record"  default="false"/>
     <arg name="camera"  default="true"/>
     <arg name="odomter" default="true"/>
     <arg name="battery" default="false"/>
@@ -20,6 +21,11 @@
     <group if="$(eval camera)">
         <node pkg="uvc_camera"  type="uvc_camera_node"   name="uvc_camera"  output="screen">
         <param name="device"    value="/dev/video0"/>
+        </node>
+    </group>
+
+    <group if="$(eval record)">
+        <node pkg="rosbag"  type="record"   name="recorder"  output="screen"    args="image_raw/compressed odom -o tgrobot">
         </node>
     </group>
     
