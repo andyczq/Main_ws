@@ -40,7 +40,6 @@ class BaseControl {
         ros::Subscriber twist_sub;
         ros::Publisher odom_pub;
         ros::Timer odom_timer;
-        OdomData odometer;
         ros::Time now_time, last_time;
         tf2_ros::TransformBroadcaster tf_broadcaster;
 };

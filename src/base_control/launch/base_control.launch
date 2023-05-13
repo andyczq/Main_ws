@@ -1,0 +1,20 @@
+<launch>
+
+    <arg name="record"  default="false"/>
+    <arg name="camera"  default="true"/>
+
+    <node name="base_control"  pkg="base_control"  type="base_control_node"  output="screen">
+    </node>
+
+    <group if="$(eval camera)">
+        <node pkg="uvc_camera"  type="uvc_camera_node"   name="uvc_camera"  output="screen">
+        <param name="device"    value="/dev/video0"/>
+        </node>
+    </group>
+
+    <group if="$(eval record)">
+        <node pkg="rosbag"  type="record"   name="recorder"  output="screen"    args="/image_raw/compressed /odom /tf -o /home/jetson/Main_ws/data_bag/Lab/test">
+        </node>
+    </group>
+
+</launch>

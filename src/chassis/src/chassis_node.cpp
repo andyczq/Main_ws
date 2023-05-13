@@ -32,6 +32,7 @@ Chassis::Chassis(ros::NodeHandle _comm_nh, ros::NodeHandle _param_nh) : node(_co
         serial::Timeout serial_timeout = serial::Timeout::simpleTimeout(2000);
         serial_port.setTimeout(serial_timeout);
         serial_port.open();
+        serial_port.flush();
     }
     catch(const serial::IOException& e)
     {
@@ -40,7 +41,7 @@ Chassis::Chassis(ros::NodeHandle _comm_nh, ros::NodeHandle _param_nh) : node(_co
     }
     ROS_INFO_STREAM("Chassis serial port enabled successfully.");
 
-    twist_cmd_vel = node.subscribe("cmd_vel", 100, &Chassis::CMD_Vel_Callback, this);
+    twist_cmd_vel = node.subscribe("cmd_vel", 1, &Chassis::CMD_Vel_Callback, this);
 
     if(pub_odometer)
     {
@@ -281,10 +282,12 @@ void Chassis::CMD_Vel_Callback(const geometry_msgs::Twist &twist_aux)
     cmd_data[11] = Check_CRC(cmd_data, 11);
 
     try {
+        serial_port.flush();
         serial_port.write(cmd_data, sizeof(cmd_data));
     }
     catch (const serial::IOException &e)
     {
+        serial_port.flush();
         ROS_ERROR("%s \n", e.what());
         ROS_ERROR_STREAM("Unable to write data through tgrobot_serial_port!");
     }
@@ -322,10 +325,12 @@ void Chassis::BatteryPub_TimerCallback(const ros::TimerEvent &event)
 bool Chassis::SendCMD_WaitResponse(const uint8_t* w_data, uint8_t *r_data, uint8_t num)
 {
     try {
+        serial_port.flush();
         serial_port.write(w_data, sizeof(w_data));
     }
     catch (const serial::IOException &e)
     {
+        serial_port.flush();
         ROS_ERROR("%s \n", e.what());
         ROS_ERROR_STREAM("Unable to write CMD[Battery].");
         return false;
@@ -346,6 +351,7 @@ bool Chassis::SendCMD_WaitResponse(const uint8_t* w_data, uint8_t *r_data, uint8
 
     try
     {
+        serial_port.flush();
         serial_port.read(r_data, num);
         return true;
     }

@@ -9,6 +9,7 @@ BaseControl::BaseControl()
 
     try{
         serial_port.open();
+        serial_port.flush();
     }
     catch(const serial::IOException& e) {
         ROS_ERROR_STREAM("Tgrobot can not open serial port,Please check the serial port cable! "); 
@@ -16,8 +17,7 @@ BaseControl::BaseControl()
     }
     ROS_INFO_STREAM("Chassis serial port enabled successfully.");
 
-    twist_sub = nh.subscribe("cmd_vel", 100, &BaseControl::SubTwist_Callback, this);
-    odometer = {0};
+    twist_sub = nh.subscribe("cmd_vel", 1, &BaseControl::SubTwist_Callback, this);
     odom_pub = nh.advertise<nav_msgs::Odometry>("odom", 50);
     odom_timer = nh.createTimer(ros::Duration(1.0/50), &BaseControl::PubOdom_TimerCallback, this);
     now_time = ros::Time::now();
@@ -51,10 +51,12 @@ BaseControl::~BaseControl()
 inline bool BaseControl::Write_SerialPort(uint8_t *data)
 {
     try {
+        serial_port.flush();
         serial_port.write(data, sizeof(data));
     }
     catch (const serial::IOException &e)
     {
+        serial_port.flush();
         ROS_ERROR("%s \n", e.what());
         return false;
     }
@@ -80,10 +82,12 @@ bool BaseControl::GetOdometer_toSensor(OdomData &odom)
             }
         }
         try {
+            serial_port.flush();
             serial_port.read(serial_buf, 14);
         }
         catch (const serial::IOException &e)
         {
+            serial_port.flush();
             ROS_ERROR("%s \n", e.what());
             return false;
         }
@@ -123,6 +127,8 @@ bool BaseControl::GetOdometer_toSensor(OdomData &odom)
 
 void BaseControl::PubOdom_TimerCallback(const ros::TimerEvent &event)
 {
+    static OdomData odometer = {0};
+    
     if(GetOdometer_toSensor(odometer) == true)
     {
         tf2::Quaternion qtn;
@@ -186,10 +192,12 @@ void BaseControl::SubTwist_Callback(const geometry_msgs::Twist &_twist)
     cmd_data[11] = Check_CRC(cmd_data, 11);
 
     try {
+        serial_port.flush();
         serial_port.write(cmd_data, sizeof(cmd_data));
     }
     catch (const serial::IOException &e)
     {
+        serial_port.flush();
         ROS_ERROR("%s \n", e.what());
         ROS_ERROR_STREAM("Unable to write data through serial_port!");
     }

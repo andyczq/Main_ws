@@ -25,7 +25,7 @@
     </group>
 
     <group if="$(eval record)">
-        <node pkg="rosbag"  type="record"   name="recorder"  output="screen"    args="-o tgrobot image_raw/compressed odom">
+        <node pkg="rosbag"  type="record"   name="recorder"  output="screen"    args="/image_raw/compressed /odom /tf -o /home/jetson/Main_ws/data_bag/Lab/test">
         </node>
     </group>
     
