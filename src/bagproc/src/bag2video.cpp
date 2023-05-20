@@ -1,4 +1,4 @@
-#include <chassis/rosbag2video.h>
+#include <bag2video.h>
 
 std::string bagname = "Test_compressed.bag";
 

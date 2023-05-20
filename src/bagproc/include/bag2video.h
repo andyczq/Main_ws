@@ -1,5 +1,5 @@
-#ifndef __ROSBAG2VIDEO_H_
-#define __ROSBAG2VIDEO_H_
+#ifndef __BAG2VIDEO_H_
+#define __BAG2VIDEO_H_
 
 #include <ros/ros.h>
 #include <iostream>
