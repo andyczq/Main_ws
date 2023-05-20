@@ -137,6 +137,7 @@ include
 ## The recommended prefix ensures that target names across packages don't collide
 # add_executable(${PROJECT_NAME}_node src/bagproc_node.cpp)
 add_executable(bag2video src/bag2video.cpp)
+add_executable(bag2image src/bag2image.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -153,6 +154,10 @@ add_executable(bag2video src/bag2video.cpp)
 #   ${catkin_LIBRARIES}
 # )
 target_link_libraries(bag2video
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(bag2image
   ${catkin_LIBRARIES}
 )
 

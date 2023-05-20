@@ -31,7 +31,7 @@ int main(int argc, char **argv)
 
     if(argc != 3)
     {
-        ROS_WARN_STREAM("Error grguiments. Todo: --imgTopic --filePath --format(default:0 Compressed)");
+        ROS_WARN_STREAM("Error grguiments. Todo: --imgTopic --filePath");
         std::cout << "Enter the image topic:\n" << std::endl;
         std::cin >> imgTopic;
         std::cout << "Enter the file complete path:\n" << std::endl;
