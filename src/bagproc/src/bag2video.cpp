@@ -1,4 +1,4 @@
-#include <bag2video.h>
+#include <bagproc/bag2video.h>
 
 std::string bagname = "Test_compressed.bag";
 

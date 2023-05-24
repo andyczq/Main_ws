@@ -1,4 +1,4 @@
-#include <bag2image.h>
+#include <bagproc/bag2image.h>
 #include <dirent.h>
 #include <sys/stat.h>
 #include <sys/types.h>
