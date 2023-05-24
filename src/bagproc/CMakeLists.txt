@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   rosbag
   cv_bridge
 )
+find_package(OpenCV REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -117,9 +118,13 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
+# MESSAGE(STATUS "catkin_INCLUDE_DIRS = ${catkin_INCLUDE_DIRS}")
+# MESSAGE(STATUS "OpenCV_INCLUDE_DIRS = ${OpenCV_INCLUDE_DIRS}")
+
 include_directories(
 include
   ${catkin_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
@@ -153,12 +158,18 @@ add_executable(bag2image src/bag2image.cpp)
 # target_link_libraries(${PROJECT_NAME}_node
 #   ${catkin_LIBRARIES}
 # )
+
+# MESSAGE(STATUS "catkin_LIB = ${catkin_LIBRARIES}")
+# MESSAGE(STATUS "OpenCV_LIB = ${OpenCV_LIBRARIES}")
+# MESSAGE(STATUS "OpenCV_LIBS = ${OpenCV_LIBS}")
 target_link_libraries(bag2video
   ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  # /usr/lib/aarch64-linux-gnu/libopencv_imgcodecs.so.3.2
 )
-
 target_link_libraries(bag2image
   ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
 )
 
 #############
