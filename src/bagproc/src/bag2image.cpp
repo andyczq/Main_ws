@@ -1,7 +1,4 @@
 #include <bagproc/bag2image.h>
-#include <dirent.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 
 std::string bagname = "Test_compressed.bag";
 
@@ -54,10 +51,12 @@ bool check_image_dir(std::string& path)
     if(checkPath_OK(path))
     {
         success = clear_dir(path);
+        ROS_INFO("clear_dir :%s %d",path.c_str(), success);
     }
     else
     {
         success = create_dir(path);
+        ROS_INFO("create_dir :%s %d",path.c_str(), success);
     }
     return success;
 }
@@ -98,15 +97,32 @@ int main(int argc, char **argv)
             ROS_WARN("Could not open the rosbag file:%s \n", bagPath.c_str());
             return -1;
         }
+        std::string outPath = filePath + "output_images";
+        if(!check_image_dir(outPath))
+        {
+            ROS_ERROR("check image DIR error, imgPath: %s", outPath.c_str());
+            return -1;
+        }
 
         uint16_t frameCount = 0, countTemp = 0;
         std::stringstream ss;
         setbuf(stdout, NULL);   // Set to no buffering
         std::cout << "\033[?25l";   // Hidden cursor
 
+        time_t now = time(NULL);
+        struct tm *local_tm = localtime(&now);
+        std::stringstream time_name;
+        time_name << local_tm->tm_year + 1900 << "-"
+                    << std::setw(2) << std::setfill('0') << local_tm->tm_mon + 1 << "-"
+                    << std::setw(2) << std::setfill('0') << local_tm->tm_mday << " "
+                    << std::setw(2) << std::setfill('0') << local_tm->tm_hour << ":"
+                    << std::setw(2) << std::setfill('0') << local_tm->tm_min << ":"
+                    << std::setw(2) << std::setfill('0') << local_tm->tm_sec;
+        std::string imgPath;
+
         if(imgTopic.find("compressed") != std::string::npos)
         {
-            std::string imgPath = filePath + "ImgCompressed/";
+            imgPath = outPath + "compressed_frames_" + time_name.str();
             if(!check_image_dir(imgPath))
             {
                 ROS_ERROR("check image DIR error, imgPath: %s", imgPath.c_str());
@@ -122,18 +138,17 @@ int main(int argc, char **argv)
                     {
                         std::cout << "\r rosbag2image Compressed images Start:-->>  " << frameCount++;
                         cv::Mat img = cv_bridge::toCvCopy(c_img_ptr, sensor_msgs::image_encodings::BGR8)->image;
-                        ss << filePath << "ImgCompressed/" << c_img_ptr->header.stamp.toNSec() << ".png";
+                        ss << imgPath << c_img_ptr->header.stamp.toNSec() << ".png";
                         cv::imwrite(ss.str(), img);
                         ss.clear();
                         ss.str("");
                     }
                 }
             }
-            ROS_INFO("\nrosbag to video successed. Output path: %s",imgPath.c_str());
         }
         else
         {
-            std::string imgPath = filePath + "Images/";
+            imgPath = outPath + "frames_" + time_name.str();
             if(!check_image_dir(imgPath))
             {
                 ROS_ERROR("check image DIR error, imgPath: %s", imgPath.c_str());
@@ -148,15 +163,15 @@ int main(int argc, char **argv)
                     {
                         std::cout << "\r rosbag2image Images Start:-->>  " << frameCount++;
                         cv::Mat img = cv_bridge::toCvCopy(img_ptr, sensor_msgs::image_encodings::BGR8)->image;
-                        ss << filePath << "Images/" << img_ptr->header.stamp.toNSec() << ".png";
+                        ss << imgPath << img_ptr->header.stamp.toNSec() << ".png";
                         cv::imwrite(ss.str(), img);
                         ss.clear();
                         ss.str("");
                     }
                 }
             }
-            ROS_INFO("\nrosbag to video successed. Output path: %s",imgPath.c_str());
         }
+        ROS_INFO("\nrosbag to video successed. Output path: %s",imgPath.c_str());
         bag_.close();
         std::cout << "\n rosbag2image Complished." << std::endl << "\033[?25h"; // Show cursor.
         
