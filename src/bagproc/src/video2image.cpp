@@ -69,6 +69,22 @@ bool check_image_dir(std::string& path)
     return success;
 }
 
+bool check_orCreate_dir(std::string& path)
+{
+    bool success = true;
+    if(!checkPath_OK(path))
+    {
+        success = create_dir(path);
+        if(success) {
+            ROS_INFO("create_dir :%s success.",path.c_str());
+        }
+        else {
+            ROS_WARN("create_dir :%s failure.",path.c_str());
+        }
+    }
+    return success;
+}
+
 int main(int argc, char **argv)
 {
     std::string videoPath;
@@ -108,7 +124,7 @@ int main(int argc, char **argv)
     }
 
     std::string outPath = video_dir + "/output_images";
-    if(!check_image_dir(outPath))
+    if(!check_orCreate_dir(outPath))
     {
         ROS_ERROR("check output_image DIR error, outPath: %s", outPath.c_str());
         return -1;
@@ -130,7 +146,7 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    uint8_t interval = frameRate / capRate; // frame extraction interval
+    uint16_t interval = frameRate / capRate; // frame extraction interval
     uint16_t factor = cap.get(cv::CAP_PROP_FRAME_COUNT)/100;    // percentage scaling factor
     uint16_t total_frames = 0, capture_num = 0;
     setbuf(stdout, NULL);   // Set to no buffering
@@ -139,16 +155,15 @@ int main(int argc, char **argv)
     cv::Mat imgFrame;
     while(cap.read(imgFrame))
     {
-        if(total_frames % interval == 0)
+        uint8_t persent = total_frames/factor;
+        persent = persent > 100? 100:persent;
+        std::cout << "\r rosbag2image Images Start:-->>  " << std::to_string(persent) << "%";
+        if(++total_frames % interval == 0)
         {
             std::stringstream ss;
             ss << "cap_" << ++capture_num << ".png";
             cv::imwrite(imgPath + ss.str(), imgFrame);
-            uint8_t persent = total_frames/factor;
-            persent = persent > 100? 100:persent;
-            std::cout << "\r rosbag2image Images Start:-->>  " << persent << "%";
         }
-        total_frames++;
     }
     std::cout << "\n video2image Complished." << std::endl << "\033[?25h"; // Show cursor.
     ROS_INFO("Video source frames: %d,  extraction frames: %d", total_frames, capture_num);
