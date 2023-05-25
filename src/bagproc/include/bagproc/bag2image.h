@@ -11,6 +11,5 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <time.h>
 
 #endif

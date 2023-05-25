@@ -51,12 +51,22 @@ bool check_image_dir(std::string& path)
     if(checkPath_OK(path))
     {
         success = clear_dir(path);
-        ROS_INFO("clear_dir :%s %d",path.c_str(), success);
+        if(success) {
+            ROS_INFO("clear_dir :%s success.",path.c_str());
+        }
+        else {
+            ROS_WARN("clear_dir :%s failure.",path.c_str());
+        }
     }
     else
     {
         success = create_dir(path);
-        ROS_INFO("create_dir :%s %d",path.c_str(), success);
+        if(success) {
+            ROS_INFO("create_dir :%s success.",path.c_str());
+        }
+        else {
+            ROS_WARN("create_dir :%s failure.",path.c_str());
+        }
     }
     return success;
 }
@@ -100,7 +110,7 @@ int main(int argc, char **argv)
         std::string outPath = filePath + "output_images";
         if(!check_image_dir(outPath))
         {
-            ROS_ERROR("check image DIR error, imgPath: %s", outPath.c_str());
+            ROS_ERROR("check output_image DIR error, outPath: %s", outPath.c_str());
             return -1;
         }
 

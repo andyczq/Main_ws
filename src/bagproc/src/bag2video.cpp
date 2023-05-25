@@ -51,10 +51,22 @@ bool check_dir(std::string& path)
     if(checkPath_OK(path))
     {
         success = clear_dir(path);
+        if(success) {
+            ROS_INFO("clear_dir :%s success.",path.c_str());
+        }
+        else {
+            ROS_WARN("clear_dir :%s failure.",path.c_str());
+        }
     }
     else
     {
         success = create_dir(path);
+        if(success) {
+            ROS_INFO("create_dir :%s success.",path.c_str());
+        }
+        else {
+            ROS_WARN("create_dir :%s failure.",path.c_str());
+        }
     }
     return success;
 }
