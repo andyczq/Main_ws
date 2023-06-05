@@ -1,7 +1,8 @@
 <launch>
 
-    <arg name="record"  default="false"/>
     <arg name="camera"  default="true"/>
+    <arg name="record"  default="false"/>
+    <arg name="bagname"  default=""/>
 
     <node name="base_control"  pkg="base_control"  type="base_control_node"  output="screen">
     </node>
@@ -13,8 +14,14 @@
     </group>
 
     <group if="$(eval record)">
-        <node pkg="rosbag"  type="record"   name="recorder"  output="screen"    args="/image_raw/compressed /odom /tf -o /home/jetson/Main_ws/bagdata/Lab/Lab">
-        </node>
+        <group if="$(eval bagname == '')">
+            <node pkg="rosbag"  type="record"   name="recorder"  output="screen"    args="/image_raw/compressed /odom /tf -o /home/jetson/Main_ws/bagdata/bag">
+            </node>
+        </group>
+        <group unless="$(eval bagname == '')">
+            <node pkg="rosbag"  type="record"   name="recorder"  output="screen"    args="/image_raw/compressed /odom /tf -o /home/jetson/Main_ws/bagdata/$(arg bagname)">
+            </node>
+        </group>
     </group>
 
 </launch>
