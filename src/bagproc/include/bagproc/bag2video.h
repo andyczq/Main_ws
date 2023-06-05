@@ -8,5 +8,7 @@
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/videoio.hpp>
 #include <dirent.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #endif
