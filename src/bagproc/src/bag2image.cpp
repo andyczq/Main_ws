@@ -69,6 +69,12 @@ bool check_image_dir(std::string& path)
     return success;
 }
 
+std::string removeUnderscores(const std::string& inputStr) {
+    std::string str(inputStr);
+    str.erase(std::remove(str.begin(), str.end(), '-'), str.end());
+    return str;
+}
+
 int main(int argc, char **argv)
 {
     std::string imgTopic, bagPath;
@@ -90,7 +96,7 @@ int main(int argc, char **argv)
         bagPath.assign(argv[2]);
         interval = atoi(argv[3]);
     }
-    std::cout << "[rosbag2video] --imgTopic:" << imgTopic << "--bagPath:" << bagPath << "--interval:" << interval << std::endl;
+    std::cout << "[rosbag2video] --imgTopic:" << imgTopic << " --bagPath:" << bagPath << " --interval(frames):" << unsigned(interval) << std::endl;
 
     ros::init(argc, argv, "rosbag2video");
     if(boost::filesystem::exists(bagPath) == false)  // Check whether the bagfile exists.
@@ -99,9 +105,11 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    std::string filePath = boost::filesystem::path(bagPath).string();
+    std::string filePath = boost::filesystem::path(bagPath).parent_path().string();
     std::string filename = boost::filesystem::path(bagPath).stem().string();
-    std::string outPath = filePath + "output_images";
+    filename = removeUnderscores(filename);
+
+    std::string outPath = filePath + "/output_images";
     if(!check_image_dir(outPath))
     {
         ROS_ERROR("check output_image DIR error, outPath: %s", outPath.c_str());
@@ -115,17 +123,16 @@ int main(int argc, char **argv)
     uint16_t frameCount = 0;
     setbuf(stdout, NULL);   // Set to no buffering
     std::cout << "\033[?25l";   // Hidden cursor
+    imgPath = outPath + filename;
+    if (!check_image_dir(imgPath))
+    {
+        ROS_ERROR("check image DIR error, imgPath: %s", imgPath.c_str());
+        return -1;
+    }
+    uint8_t countTemp = 0;
 
     if (imgTopic.find("compressed") != std::string::npos)
     {
-        imgPath = outPath + "imgcpr_" + filename;
-        if (!check_image_dir(imgPath))
-        {
-            ROS_ERROR("check image DIR error, imgPath: %s", imgPath.c_str());
-            return -1;
-        }
-
-        uint8_t countTemp = 0;
         for (rosbag::MessageInstance const m : rosbag::View(bag))
         {
             sensor_msgs::CompressedImageConstPtr c_img_ptr = m.instantiate<sensor_msgs::CompressedImage>();
@@ -136,7 +143,7 @@ int main(int argc, char **argv)
                     std::cout << "\r rosbag2image Compressed images Start:-->>  " << ++frameCount;
                     cv::Mat img = cv_bridge::toCvCopy(c_img_ptr, sensor_msgs::image_encodings::BGR8)->image;
                     std::stringstream ss;
-                    ss << imgPath << frameCount << ".png";
+                    ss << imgPath << "cpr_" << frameCount << ".png";
                     cv::imwrite(ss.str(), img);
                 }
             }
@@ -144,14 +151,6 @@ int main(int argc, char **argv)
     }
     else
     {
-        imgPath = outPath + "img_" + filename;
-        if (!check_image_dir(imgPath))
-        {
-            ROS_ERROR("check image DIR error, imgPath: %s", imgPath.c_str());
-            return -1;
-        }
-
-        uint8_t countTemp = 0;
         for (rosbag::MessageInstance const m : rosbag::View(bag))
         {
             sensor_msgs::ImageConstPtr img_ptr = m.instantiate<sensor_msgs::Image>();
@@ -162,15 +161,15 @@ int main(int argc, char **argv)
                     std::cout << "\r rosbag2image Images Start:-->>  " << ++frameCount;
                     cv::Mat img = cv_bridge::toCvCopy(img_ptr, sensor_msgs::image_encodings::BGR8)->image;
                     std::stringstream ss;
-                    ss << imgPath << frameCount << ".png";
+                    ss << imgPath << "img_" << frameCount << ".png";
                     cv::imwrite(ss.str(), img);
                 }
             }
         }
     }
     bag.close();
-    ROS_INFO("\nrosbag convert to image successed. Output path: %s", imgPath.c_str());
-    std::cout << "\n rosbag2image complished extract " << frameCount << " frames" << std::endl
+    ROS_INFO("\nrosbag convert to image successed.\nOutput path: %s", imgPath.c_str());
+    std::cout << "\nrosbag2image complished extract " << frameCount << " frames" << std::endl
               << "\033[?25h"; // Show cursor.
 
     return 0;

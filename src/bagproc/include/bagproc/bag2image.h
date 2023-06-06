@@ -12,5 +12,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <boost/filesystem.hpp>
+#include <algorithm>
 
 #endif
