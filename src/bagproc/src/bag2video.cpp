@@ -1,7 +1,5 @@
 #include <bagproc/bag2video.h>
 
-std::string bagname = "Test_compressed.bag";
-
 bool checkPath_OK(std::string &path)
 {
     if(path.back() != '/') {    // Is the end of the string a slash?
@@ -45,21 +43,11 @@ bool create_dir(const std::string& path) {
     return mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == 0;
 }
 
-bool check_dir(std::string& path)
+bool check_targetDir(std::string& path)
 {
     bool success = true;
-    if(checkPath_OK(path))
-    {
-        success = clear_dir(path);
-        if(success) {
-            ROS_INFO("clear_dir :%s success.",path.c_str());
-        }
-        else {
-            ROS_WARN("clear_dir :%s failure.",path.c_str());
-        }
-    }
-    else
-    {
+    if(!checkPath_OK(path))
+        {
         success = create_dir(path);
         if(success) {
             ROS_INFO("create_dir :%s success.",path.c_str());
@@ -80,99 +68,96 @@ std::string replaceSlash(std::string str){
     return str;
 }
 
+std::string removeStrigula(const std::string& inputStr) {
+    std::string str(inputStr);
+    str.erase(std::remove(str.begin(), str.end(), '-'), str.end());
+    return str;
+}
+
 int main(int argc, char **argv)
 {
-    std::string imgTopic, filePath;
+    std::string bagPath;
 
-    if(argc != 3)
+    if(argc != 2)
     {
-        ROS_WARN_STREAM("Error grguiments. Todo: --imgTopic --filePath");
-        std::cout << "Enter the image topic:\n" << std::endl;
-        std::cin >> imgTopic;
-        std::cout << "Enter the file complete path:\n" << std::endl;
-        std::cin >> filePath;
+        ROS_WARN_STREAM("Error grguiments. Todo: --bagPath");
+        std::cout << "Enter the bagfile complete path:" << std::endl;
+        std::cin >> bagPath;
     }
     else
     {
-        imgTopic.assign(argv[1]);
-        filePath.assign(argv[2]);
+        bagPath.assign(argv[1]);
     }
 
-    ROS_INFO("[rosbag2video] --imgTopic: %s  --filePath: %s", imgTopic.c_str(), filePath.c_str());
-    
-    if(checkPath_OK(filePath))
+    ROS_INFO("[bag2video] --bagPath: %s", bagPath.c_str());
+
+    if(boost::filesystem::exists(bagPath) == false)  // Check whether the bagfile exists.
     {
-        ros::init(argc, argv, "rosbag2video");
-        std::string bagPath = filePath + bagname;
-        rosbag::Bag bag_;
-        try {
-            bag_.open(bagPath);
-        }
-        catch(cv_bridge::Exception e) {
-            ROS_ERROR("%s \n", e.what());
-            ROS_WARN("Could not open the rosbag file:%s \n", bagPath.c_str());
-            return -1;
-        }
-
-        time_t now = time(NULL);
-        struct tm *local_tm = localtime(&now);
-        std::stringstream time_name;
-        time_name << local_tm->tm_year + 1900 << "-"
-                    << std::setw(2) << std::setfill('0') << local_tm->tm_mon + 1 << "-"
-                    << std::setw(2) << std::setfill('0') << local_tm->tm_mday << " "
-                    << std::setw(2) << std::setfill('0') << local_tm->tm_hour << ":"
-                    << std::setw(2) << std::setfill('0') << local_tm->tm_min << ":"
-                    << std::setw(2) << std::setfill('0') << local_tm->tm_sec;
-
-        std::string videoPath = filePath + "output_videos";
-        if(!check_dir(videoPath))
-        {
-            ROS_ERROR("check video DIR error, videoPath: %s", videoPath.c_str());
-            return -1;
-        }
-
-        setbuf(stdout, NULL);   // Set to no buffering
-        std::cout << "\033[?25l";   // Hidden cursor
-        uint16_t frameCount = 0;
-        cv::VideoWriter videoWriter;
-        std::string videoName;
-
-        if(imgTopic.find("compressed") != std::string::npos)
-        {
-            videoName = videoPath + "compressed_" + time_name.str() + ".mp4";
-            videoWriter.open(videoName, cv::VideoWriter::fourcc('h','2','6','4'), 30, cv::Size(640,480));
-            for (rosbag::MessageInstance const m : rosbag::View(bag_))
-            {
-                sensor_msgs::CompressedImageConstPtr c_img_ptr = m.instantiate<sensor_msgs::CompressedImage>();
-                if (c_img_ptr != nullptr)
-                {
-                    std::cout << "\r rosbag2video Start:-->>  " << frameCount++;
-                    cv::Mat img = cv_bridge::toCvCopy(c_img_ptr, sensor_msgs::image_encodings::BGR8)->image;
-                    videoWriter << img;
-                }
-            }
-        }
-        else
-        {
-            videoName = videoPath + "nomal_" + time_name.str() + ".mp4";
-            videoWriter.open(videoName, cv::VideoWriter::fourcc('h','2','6','4'), 30, cv::Size(640,480));
-            for (rosbag::MessageInstance const m : rosbag::View(bag_))
-            {
-                sensor_msgs::ImageConstPtr img_ptr = m.instantiate<sensor_msgs::Image>();
-                if (img_ptr != nullptr)
-                {
-                    std::cout << "\r rosbag2video Start:-->>  " << frameCount++;
-                    cv::Mat img = cv_bridge::toCvShare(img_ptr, sensor_msgs::image_encodings::BGR8)->image;
-                    videoWriter << img;
-                }
-            }
-        }
-
-        videoWriter.release();
-        bag_.close();
-        std::cout << "\n rosbag2video Complished." << std::endl << "\033[?25h"; // Show cursor.
-        ROS_INFO("rosbag to video successed. Output path: %s",videoName.c_str());
+        ROS_ERROR("Specified rosbag file not exist.-- %s \n", bagPath.c_str());
+        return -1;
     }
+    std::string filePath = boost::filesystem::path(bagPath).parent_path().string();
+    std::string filename = boost::filesystem::path(bagPath).stem().string();
+    filename = removeStrigula(filename);
+
+    ros::init(argc, argv, "bag2video");
+
+    std::string outPath = filePath + "/output_videos";
+    if (!check_targetDir(outPath))
+    {
+        ROS_ERROR("check output_video DIR error, outPath: %s", outPath.c_str());
+        return -1;
+    }
+
+    rosbag::Bag bag;
+    bag.open(bagPath);
+
+    setbuf(stdout, NULL);     // Set to no buffering
+    std::cout << "\033[?25l"; // Hidden cursor
+
+    uint16_t frames_cpr = 0, frames_img = 0;
+    std::string videoName1 = outPath + filename + "_compressed" + ".mp4";
+    std::string videoName2 = outPath + filename + "_raw" + ".mp4";
+    cv::VideoWriter vWriter1, vWriter2;
+    vWriter1.open(videoName1, cv::VideoWriter::fourcc('h', '2', '6', '4'), 30, cv::Size(640, 480));
+    vWriter2.open(videoName2, cv::VideoWriter::fourcc('h', '2', '6', '4'), 30, cv::Size(640, 480));
+
+    for (rosbag::MessageInstance const m : rosbag::View(bag))
+    {
+        sensor_msgs::CompressedImageConstPtr c_img_ptr = m.instantiate<sensor_msgs::CompressedImage>();
+        if (c_img_ptr != nullptr)
+        {
+            std::cout << "\r[bag2video] -Compressed Start:---->>  " << ++frames_cpr;
+            cv::Mat img = cv_bridge::toCvCopy(c_img_ptr, sensor_msgs::image_encodings::BGR8)->image;
+            vWriter1 << img;
+        }
+
+        sensor_msgs::ImageConstPtr img_ptr = m.instantiate<sensor_msgs::Image>();
+        if (img_ptr != nullptr)
+        {
+            std::cout << "\r[bag2video] Start:-->>  " << ++frames_img;
+            cv::Mat img = cv_bridge::toCvShare(img_ptr, sensor_msgs::image_encodings::BGR8)->image;
+            vWriter2 << img;
+        }
+    }
+    vWriter1.release();
+    vWriter2.release();
+    bag.close();
+    std::cout << "\nbag2video complished extract: [--compressed images " << frames_cpr << "], [--raw images " << frames_img << "]." << std::endl
+              << "\033[?25h"; // Show cursor.
+    if(frames_cpr < 10) // Not enough frames to synthesize video
+    {
+        boost::filesystem::remove(videoName1);
+        ROS_INFO("Topic 'image_compressed' not in rosbag file.");
+    }
+    else ROS_INFO("rosbag convert to compressed video successed.\nOutput path: %s", videoName1.c_str());
+
+    if(frames_img < 10) // Not enough frames to synthesize video
+    {
+        boost::filesystem::remove(videoName2);
+        ROS_INFO("Topic 'image_raw' not in rosbag file.");
+    }
+    else ROS_INFO("rosbag convert to compressed video successed.\nOutput path: %s", videoName2.c_str());
 
     return 0;
 }

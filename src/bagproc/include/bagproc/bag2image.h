@@ -10,7 +10,7 @@
 #include <opencv2/imgcodecs.hpp>
 #include <dirent.h>
 #include <sys/stat.h>
-#include <sys/types.h>
+// #include <sys/types.h>
 #include <boost/filesystem.hpp>
 #include <algorithm>
 

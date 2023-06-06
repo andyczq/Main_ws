@@ -85,6 +85,20 @@ bool check_orCreate_dir(std::string& path)
     return success;
 }
 
+std::string getTimeStrNow()
+{
+    time_t now = time(NULL);
+    struct tm *local_tm = localtime(&now);
+    std::stringstream time_name;
+    time_name << local_tm->tm_year + 1900 << "-"
+                << std::setw(2) << std::setfill('0') << local_tm->tm_mon + 1 << "-"
+                << std::setw(2) << std::setfill('0') << local_tm->tm_mday << " "
+                << std::setw(2) << std::setfill('0') << local_tm->tm_hour << ":"
+                << std::setw(2) << std::setfill('0') << local_tm->tm_min << ":"
+                << std::setw(2) << std::setfill('0') << local_tm->tm_sec;
+    return time_name.str();
+}
+
 int main(int argc, char **argv)
 {
     std::string videoPath;
@@ -130,16 +144,8 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    time_t now = time(NULL);
-    struct tm *local_tm = localtime(&now);
-    std::stringstream time_name;
-    time_name << local_tm->tm_year + 1900 << "-"
-                << std::setw(2) << std::setfill('0') << local_tm->tm_mon + 1 << "-"
-                << std::setw(2) << std::setfill('0') << local_tm->tm_mday << " "
-                << std::setw(2) << std::setfill('0') << local_tm->tm_hour << ":"
-                << std::setw(2) << std::setfill('0') << local_tm->tm_min << ":"
-                << std::setw(2) << std::setfill('0') << local_tm->tm_sec;
-    std::string imgPath = outPath + "capture_frames_" + time_name.str();
+    
+    std::string imgPath = outPath + "capture_frames";
     if(!check_image_dir(imgPath))
     {
         ROS_ERROR("check image DIR error, imgPath: %s", imgPath.c_str());
