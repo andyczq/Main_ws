@@ -90,11 +90,11 @@ std::string getTimeStrNow()
     time_t now = time(NULL);
     struct tm *local_tm = localtime(&now);
     std::stringstream time_name;
-    time_name << local_tm->tm_year + 1900 << "-"
-                << std::setw(2) << std::setfill('0') << local_tm->tm_mon + 1 << "-"
-                << std::setw(2) << std::setfill('0') << local_tm->tm_mday << " "
-                << std::setw(2) << std::setfill('0') << local_tm->tm_hour << ":"
-                << std::setw(2) << std::setfill('0') << local_tm->tm_min << ":"
+    time_name << local_tm->tm_year + 1900
+                << std::setw(2) << std::setfill('0') << local_tm->tm_mon + 1
+                << std::setw(2) << std::setfill('0') << local_tm->tm_mday
+                << std::setw(2) << std::setfill('0') << local_tm->tm_hour
+                << std::setw(2) << std::setfill('0') << local_tm->tm_min
                 << std::setw(2) << std::setfill('0') << local_tm->tm_sec;
     return time_name.str();
 }
@@ -107,9 +107,9 @@ int main(int argc, char **argv)
     if(argc != 3)
     {
         ROS_WARN_STREAM("Error grguiments. Todo: --video_Path --captureRate");
-        std::cout << "Enter the file complete path:\n" << std::endl;
+        std::cout << "Enter the video file complete path:\n" << std::endl;
         std::cin >> videoPath;
-        std::cout << "Enter the file image extraction frame interval:\n" << std::endl;
+        std::cout << "Enter the frame extraction frequency:\n" << std::endl;
         std::cin >> capRate;
     }
     else
@@ -117,7 +117,7 @@ int main(int argc, char **argv)
         videoPath.assign(argv[1]);
         capRate = atof(argv[2]);
     }
-    ROS_INFO("[video2image] --video_Path: %s  --captureRate: %.2f", videoPath.c_str(), capRate);
+    ROS_INFO("[video2image] --videoPath: %s  --captureRate: %.2f", videoPath.c_str(), capRate);
     ros::init(argc, argv, "video2image");
 
     // open video file
@@ -137,7 +137,7 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    std::string outPath = video_dir + "/output_images";
+    std::string outPath = video_dir + "/extract_images";
     if(!check_orCreate_dir(outPath))
     {
         ROS_ERROR("check output_image DIR error, outPath: %s", outPath.c_str());
@@ -145,14 +145,14 @@ int main(int argc, char **argv)
     }
 
     
-    std::string imgPath = outPath + "capture_frames";
+    uint16_t interval = frameRate / capRate; // frame extraction interval
+    std::string imgPath = outPath + "CAP" + getTimeStrNow() + "R" + std::to_string(interval);
     if(!check_image_dir(imgPath))
     {
         ROS_ERROR("check image DIR error, imgPath: %s", imgPath.c_str());
         return -1;
     }
 
-    uint16_t interval = frameRate / capRate; // frame extraction interval
     uint16_t factor = cap.get(cv::CAP_PROP_FRAME_COUNT)/100;    // percentage scaling factor
     uint16_t total_frames = 0, capture_num = 0;
     setbuf(stdout, NULL);   // Set to no buffering
