@@ -1,0 +1,18 @@
+<launch>
+
+    <env name="USER"/>
+    <arg name="user_name"       default="$(arg USER)"/>
+    <arg name="record"  default="false"/>
+
+    <include file="$(find base_control)/launch/base_control.launch"></include>
+
+    <node pkg="uvc_camera"  type="uvc_camera_node"   name="uvc_camera"  output="screen">
+        <param name="device"    value="/dev/video0"/>
+    </node>
+
+    <group if="$(eval record)">
+        <node pkg="rosbag"  type="record"   name="recorder"  output="screen"    args="/image_raw/compressed /odom /tf -o /home/$(arg user_name)/Main_WS/bagdata/odom">
+        </node>
+    </group>
+
+</launch>

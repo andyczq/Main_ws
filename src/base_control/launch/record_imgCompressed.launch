@@ -1,5 +1,0 @@
-<launch>
-    <arg name="bagname"  default=""/>
-    <node pkg="rosbag"  type="record"   name="record_imgCompressed"  output="screen"    args="/image_raw/compressed -o /home/jetson/Main_ws/bagdata/$(arg bagname)">
-    </node>
-</launch>

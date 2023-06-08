@@ -1,27 +1,15 @@
 <launch>
 
-    <arg name="camera"  default="true"/>
-    <arg name="record"  default="false"/>
-    <arg name="bagname"  default=""/>
+    <env name="USER"/>
+    <arg name="user_name"       default="$(arg USER)"/>
+    <arg name="record_odom"  default="false"/>
 
     <node name="base_control"  pkg="base_control"  type="base_control_node"  output="screen">
     </node>
 
-    <group if="$(eval camera)">
-        <node pkg="uvc_camera"  type="uvc_camera_node"   name="uvc_camera"  output="screen">
-        <param name="device"    value="/dev/video0"/>
-        </node>
-    </group>
-
     <group if="$(eval record)">
-        <group if="$(eval bagname == '')">
-            <node pkg="rosbag"  type="record"   name="recorder"  output="screen"    args="/image_raw/compressed /odom /tf -o /home/jetson/Main_ws/bagdata/bag">
-            </node>
-        </group>
-        <group unless="$(eval bagname == '')">
-            <node pkg="rosbag"  type="record"   name="recorder"  output="screen"    args="/image_raw/compressed /odom /tf -o /home/jetson/Main_ws/bagdata/$(arg bagname)">
-            </node>
-        </group>
+        <node pkg="rosbag"  type="record"   name="record_odom"  output="screen"    args="/odom /tf -o /home/$(arg user_name)/Main_WS/bagdata/odom">
+        </node>
     </group>
 
 </launch>

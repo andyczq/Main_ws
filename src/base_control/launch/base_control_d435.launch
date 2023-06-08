@@ -1,0 +1,27 @@
+<launch>
+
+    <arg name="filters"         default=""/>        <!-- The options, separated by commas: colorizer, pointcloud -->
+    <arg name="align_depth"     default="false"/>    <!-- If set to true, will publish additional topics with all the images aligned to the depth image. -->
+    <arg name="record"          default="false"/>
+    <arg name="bagname"         default=""/>
+
+    <node name="base_control"  pkg="base_control"  type="base_control_node"  output="screen">
+    </node>
+
+    <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+        <arg name="filters"         value="$(arg filters)"/>
+        <arg name="align_depth"     value="$(arg align_depth)"/>
+    </include>
+
+    <group if="$(eval record)">
+        <group if="$(eval bagname == '')">
+            <node pkg="rosbag"  type="record"   name="recorder"  output="screen"    args="/camera/depth/image_rect_raw/compressed /odom /tf -o /home/jetson/Main_ws/bagdata/bag">
+            </node>
+        </group>
+        <group unless="$(eval bagname == '')">
+            <node pkg="rosbag"  type="record"   name="recorder"  output="screen"    args="/camera/depth/image_rect_raw/compressed /odom /tf -o /home/jetson/Main_ws/bagdata/$(arg bagname)">
+            </node>
+        </group>
+    </group>
+
+</launch>

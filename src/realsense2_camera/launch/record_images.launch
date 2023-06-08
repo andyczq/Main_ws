@@ -1,0 +1,14 @@
+<launch>
+
+                <!-- /camera/aligned_depth_to_color/image_raw/compressed
+                /camera/color/image_raw
+                /camera/depth/image_rect_raw/compressed
+                /camera/infra1/image_rect_raw/compressed
+                /camera/infra2/image_rect_raw/compressed -->
+    <arg name="bagname"  default=""/>
+
+    <node pkg="rosbag"  type="record"   name="record_image_compressed"  output="screen"    
+        args="   /camera/depth/image_rect_raw
+                -o /home/server/Main_WS/bagdata/$(arg bagname)">
+    </node>
+</launch>
