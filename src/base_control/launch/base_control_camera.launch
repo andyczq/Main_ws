@@ -11,7 +11,7 @@
     </node>
 
     <group if="$(eval record)">
-        <node pkg="rosbag"  type="record"   name="recorder"  output="screen"    args="/image_raw/compressed /odom /tf -o /home/$(arg user_name)/Main_WS/bagdata/odom">
+        <node pkg="rosbag"  type="record"   name="record_cam"  output="screen"    args="/image_raw/compressed -o /home/$(arg user_name)/Main_WS/bagdata/cam">
         </node>
     </group>
 

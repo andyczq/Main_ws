@@ -143,6 +143,8 @@ include
 # add_executable(${PROJECT_NAME}_node src/bagproc_node.cpp)
 add_executable(bag2video    src/bag2video.cpp)
 add_executable(bag2image    src/bag2image.cpp)
+add_executable(rs_bag2video    src/rs_bag2video.cpp)
+add_executable(rs_bag2image    src/rs_bag2image.cpp)
 add_executable(video2image  src/video2image.cpp)
 
 ## Rename C++ executable without prefix
@@ -169,6 +171,14 @@ target_link_libraries(bag2video
   # /usr/lib/aarch64-linux-gnu/libopencv_imgcodecs.so.3.2
 )
 target_link_libraries(bag2image
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+)
+target_link_libraries(rs_bag2video
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+)
+target_link_libraries(rs_bag2image
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
 )
