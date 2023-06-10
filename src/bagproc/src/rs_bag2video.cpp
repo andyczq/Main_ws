@@ -89,23 +89,30 @@ int main(int argc, char **argv)
         bagPath.assign(argv[1]);
     }
 
-    ROS_INFO("[bag2video] --bagPath: %s", bagPath.c_str());
+    ROS_INFO("[rs_bag2video] --bagPath: %s", bagPath.c_str());
 
     if(boost::filesystem::exists(bagPath) == false)  // Check whether the bagfile exists.
     {
         ROS_ERROR("Specified rosbag file not exist.-- %s \n", bagPath.c_str());
         return -1;
     }
+    ros::init(argc, argv, "rs_bag2video");
+
     std::string filePath = boost::filesystem::path(bagPath).parent_path().string();
     std::string filename = boost::filesystem::path(bagPath).stem().string();
     filename = removeStrigula(filename);
-
-    ros::init(argc, argv, "bag2video");
 
     std::string outPath = filePath + "/output_videos";
     if (!check_targetDir(outPath))
     {
         ROS_ERROR("check output_video DIR error, outPath: %s", outPath.c_str());
+        return -1;
+    }
+
+    std::string videoPath = outPath + filename;
+    if (!check_targetDir(videoPath))
+    {
+        ROS_ERROR("check video DIR error, videoPath: %s", videoPath.c_str());
         return -1;
     }
 
@@ -115,49 +122,75 @@ int main(int argc, char **argv)
     setbuf(stdout, NULL);     // Set to no buffering
     std::cout << "\033[?25l"; // Hidden cursor
 
-    uint16_t frames_cpr = 0, frames_img = 0;
-    std::string videoName1 = outPath + filename + "_compressed" + ".mp4";
-    std::string videoName2 = outPath + filename + "_raw" + ".mp4";
-    cv::VideoWriter vWriter1, vWriter2;
-    vWriter1.open(videoName1, cv::VideoWriter::fourcc('h', '2', '6', '4'), 30, cv::Size(640, 480));
-    vWriter2.open(videoName2, cv::VideoWriter::fourcc('h', '2', '6', '4'), 30, cv::Size(640, 480));
+    std::string color_video = videoPath + "color_" + filename + ".mp4";
+    std::string depth_video = outPath + "depth_" + filename + ".mp4";
+    std::string align_video = outPath + "align_" + filename + ".mp4";
+    cv::VideoWriter color_writer, depth_writer, align_writer;
+    color_writer.open(color_video, cv::VideoWriter::fourcc('h', '2', '6', '4'), 30, cv::Size(640, 480));
+    depth_writer.open(depth_video, cv::VideoWriter::fourcc('h', '2', '6', '4'), 30, cv::Size(640, 480));
+    align_writer.open(align_video, cv::VideoWriter::fourcc('h', '2', '6', '4'), 30, cv::Size(640, 480));
+    uint16_t color_count = 0, depth_count = 0, align_count = 0;
 
     for (rosbag::MessageInstance const m : rosbag::View(bag))
     {
-        sensor_msgs::CompressedImageConstPtr c_img_ptr = m.instantiate<sensor_msgs::CompressedImage>();
-        if (c_img_ptr != nullptr)
+        sensor_msgs::CompressedImageConstPtr image_ptr = m.instantiate<sensor_msgs::CompressedImage>();
+        if (image_ptr != nullptr)
         {
-            std::cout << "\r[bag2video] -Compressed Start:---->>  " << ++frames_cpr;
-            cv::Mat img = cv_bridge::toCvCopy(c_img_ptr, sensor_msgs::image_encodings::BGR8)->image;
-            vWriter1 << img;
+            std::cout << "\r[rs_bag2video] -Start:---->>  -color:" << color_count << " -depth:" << depth_count << " -align:" << align_count;
+
+            try
+            {
+                cv::Mat image = cv::imdecode(cv::Mat(image_ptr->data), cv::IMREAD_COLOR);
+
+                if(m.getTopic() == "/camera/color/image_raw/compressed")
+                {
+                    color_count++;
+                    color_writer << image;
+                }
+                else if(m.getTopic() == "/camera/depth/image_rect_raw/compressed")
+                {
+                    depth_count++;
+                    depth_writer << image;
+                }
+                else if(m.getTopic() == "/camera/aligned_depth_to_color/image_raw/compressed")
+                {
+                    align_count++;
+                    align_writer << image;
+                }
+            }
+            catch(const cv_bridge::Exception& e)
+            {
+                ROS_ERROR("cv_bridge exception: %s", e.what());
+            }
+            
         }
 
-        sensor_msgs::ImageConstPtr img_ptr = m.instantiate<sensor_msgs::Image>();
-        if (img_ptr != nullptr)
-        {
-            std::cout << "\r[bag2video] Start:-->>  " << ++frames_img;
-            cv::Mat img = cv_bridge::toCvShare(img_ptr, sensor_msgs::image_encodings::BGR8)->image;
-            vWriter2 << img;
-        }
     }
-    vWriter1.release();
-    vWriter2.release();
+    color_writer.release();
+    depth_writer.release();
+    align_writer.release();
     bag.close();
-    std::cout << "\nbag2video complished extract: [--compressed images " << frames_cpr << "], [--raw images " << frames_img << "]." << std::endl
-              << "\033[?25h"; // Show cursor.
-    if(frames_cpr < 10) // Not enough frames to synthesize video
+    std::cout << "\n[rs_bag2video] -Ended with:---->>  -color:" << color_count << " -depth:" << depth_count << " -align:" << align_count << "\033[?25h"; // Show cursor.
+    if(color_count < 10) // Not enough frames to synthesize video
     {
-        boost::filesystem::remove(videoName1);
-        ROS_INFO("Topic 'image_compressed' not in rosbag file.");
+        boost::filesystem::remove(color_video);
+        ROS_INFO("Topic 'color_image' not in rosbag file.");
     }
-    else ROS_INFO("rosbag convert to compressed video successed.\nOutput path: %s", videoName1.c_str());
+    else ROS_INFO("rosbag convert to color_video successed.\nOutput path: %s", color_video.c_str());
 
-    if(frames_img < 10) // Not enough frames to synthesize video
+    if(depth_count < 10) // Not enough frames to synthesize video
     {
-        boost::filesystem::remove(videoName2);
-        ROS_INFO("Topic 'image_raw' not in rosbag file.");
+        boost::filesystem::remove(depth_video);
+        ROS_INFO("Topic 'depth_image' not in rosbag file.");
     }
-    else ROS_INFO("rosbag convert to compressed video successed.\nOutput path: %s", videoName2.c_str());
+    else ROS_INFO("rosbag convert to depth_video successed.\nOutput path: %s", depth_video.c_str());
+
+    if(align_count < 10) // Not enough frames to synthesize video
+    {
+        boost::filesystem::remove(align_video);
+        ROS_INFO("Topic 'depth_image' not in rosbag file.");
+    }
+    else ROS_INFO("rosbag convert to align_video successed.\nOutput path: %s", align_video.c_str());
 
     return 0;
 }
