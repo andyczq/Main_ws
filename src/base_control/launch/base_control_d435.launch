@@ -1,13 +1,11 @@
 <launch>
 
-    <env name="USER"/>
-    <arg name="user_name"       default="$(arg USER)"/>
+    <arg name="user"       default="$(env USER)"/>
     <arg name="filters"         default=""/>        <!-- The options, separated by commas: colorizer, pointcloud -->
-    <arg name="align_depth"     default="false"/>    <!-- If set to true, will publish additional topics with all the images aligned to the depth image. -->
+    <arg name="align_depth"     default="true"/>    <!-- If set to true, will publish additional topics with all the images aligned to the depth image. -->
     <arg name="record"          default="false"/>
 
-    <node name="base_control"  pkg="base_control"  type="base_control_node"  output="screen">
-    </node>
+    <include file="$(find base_control)/launch/base_control.launch"></include>
 
     <include file="$(find realsense2_camera)/launch/rs_camera.launch">
         <arg name="filters"         value="$(arg filters)"/>
@@ -15,7 +13,7 @@
     </include>
 
     <group if="$(eval record)">
-            <node pkg="rosbag"  type="record"   name="record_d435"  output="screen"    args="/camera/color/image_raw/compressed /camera/depth/image_rect_raw/compressed -o /home/$(arg user_name)/Main_WS/bagdata/d435">
+            <node pkg="rosbag"  type="record"   name="record_d435"  output="screen"    args="/camera/color/image_raw/compressed /camera/depth/image_rect_raw/compressed -o /home/$(arg user)/Main_WS/bagdata/rs">
             </node>
     </group>
 

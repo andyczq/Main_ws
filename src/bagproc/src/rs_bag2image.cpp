@@ -93,7 +93,7 @@ int main(int argc, char **argv)
         bagPath.assign(argv[1]);
         interval = atoi(argv[2]);
     }
-    std::cout << "[rs_bag2image INFO]:" << " --bagPath:" << bagPath << " --interval(frames):" << unsigned(interval) << std::endl;
+    std::cout << "[rs_bag2image] INFO:" << " --bagPath:" << bagPath << " --interval(frames):" << unsigned(interval) << std::endl;
 
     ros::init(argc, argv, "rs_bag2image");
     if(boost::filesystem::exists(bagPath) == false)  // Check whether the bagfile exists.
@@ -117,49 +117,85 @@ int main(int argc, char **argv)
     bag.open(bagPath);
 
     std::string imgPath;
-    setbuf(stdout, NULL);   // Set to no buffering
-    std::cout << "\033[?25l";   // Hidden cursor
     imgPath = outPath + filename;
     if (!check_image_dir(imgPath))
     {
         ROS_ERROR("check image DIR error, imgPath: %s", imgPath.c_str());
         return -1;
     }
-    uint8_t count_cpr = 0, count_img = 0;
-    uint16_t frames_cpr = 0, frames_img = 0;
 
-    // if (std::string imgTopic.find("compressed") != std::string::npos) 
-    // find specified content in string
+    std::string colorPath = imgPath +  "/color";
+    if (!check_image_dir(colorPath))
+    {
+        ROS_ERROR("check image DIR error, imgPath: %s", colorPath.c_str());
+        return -1;
+    }
+
+    std::string depthPath = imgPath +  "/depth";
+    if (!check_image_dir(depthPath))
+    {
+        ROS_ERROR("check image DIR error, imgPath: %s", depthPath.c_str());
+        return -1;
+    }
+
+    std::string alignPath = imgPath +  "/align";
+    if (!check_image_dir(alignPath))
+    {
+        ROS_ERROR("check image DIR error, imgPath: %s", alignPath.c_str());
+        return -1;
+    }
+
+    uint8_t color_cap = 0, depth_cap = 0, align_cap = 0;;
+    uint16_t color_count = 0, depth_count = 0, align_count = 0;
+
+    setbuf(stdout, NULL);   // Set to no buffering
+    std::cout << "\033[?25l\n";   // Hidden cursor
     for (rosbag::MessageInstance const m : rosbag::View(bag))
     {
-        sensor_msgs::CompressedImageConstPtr c_img_ptr = m.instantiate<sensor_msgs::CompressedImage>();
-        if (c_img_ptr != nullptr)
+        sensor_msgs::CompressedImageConstPtr image_ptr = m.instantiate<sensor_msgs::CompressedImage>();
+        if (image_ptr != nullptr)
         {
-            if ((++count_cpr) % interval == 0)
+            std::cout << "\r[rs_bag2image] -Start:---->>  -color:" << color_count << " -depth:" << depth_count << " -align:" << align_count;
+            try
             {
-                std::cout << "\r[bag2image] -Compressed Start:---->>  " << ++frames_cpr;
-                cv::Mat img = cv_bridge::toCvCopy(c_img_ptr, sensor_msgs::image_encodings::BGR8)->image;
-                std::stringstream ss;
-                ss << imgPath << "cpr_" << frames_cpr << ".png";
-                cv::imwrite(ss.str(), img);
-            }
-        }
+                cv::Mat image = cv::imdecode(cv::Mat(image_ptr->data), cv::IMREAD_COLOR);
 
-        sensor_msgs::ImageConstPtr img_ptr = m.instantiate<sensor_msgs::Image>();
-        if (img_ptr != nullptr)
-        {
-            if ((++count_img) % interval == 0)
+                if(m.getTopic() == "/camera/color/image_raw/compressed")
+                {
+                    if ((++color_cap) % interval == 0)
+                    {
+                        std::stringstream imgName;
+                        imgName << colorPath << "color_"  << std::setw(5) << std::setfill('0') << ++color_count << ".png";
+                        cv::imwrite(imgName.str(), image);
+                    }
+                }
+                else if(m.getTopic() == "/camera/depth/image_rect_raw/compressed")
+                {
+                    if ((++depth_cap) % interval == 0)
+                    {
+                        std::stringstream imgName;
+                        imgName << depthPath << "depth_"  << std::setw(5) << std::setfill('0') << ++depth_count << ".png";
+                        cv::imwrite(imgName.str(), image);
+                    }
+                }
+                else if(m.getTopic() == "/camera/aligned_depth_to_color/image_raw/compressed")
+                {
+                    if ((++align_cap) % interval == 0)
+                    {
+                        std::stringstream imgName;
+                        imgName << alignPath << "align_"  << std::setw(5) << std::setfill('0') << ++align_count << ".png";
+                        cv::imwrite(imgName.str(), image);
+                    }
+                }
+            }
+            catch(const cv_bridge::Exception& e)
             {
-                std::cout << "\r[bag2image] Start:---->>  " << ++frames_img;
-                cv::Mat img = cv_bridge::toCvShare(img_ptr, sensor_msgs::image_encodings::BGR8)->image;
-                std::stringstream ss;
-                ss << imgPath << "img_" << frames_img << ".png";
-                cv::imwrite(ss.str(), img);
+                ROS_ERROR("cv_bridge exception: %s", e.what());
             }
         }
     }
     bag.close();
-    std::cout << "\nbag2image complished extract: [--compressed images " << frames_cpr << "], [--raw images " << frames_img << "]." << std::endl
+    std::cout << "\nbag2image complished extract: [--color_images " << color_count << "], [--depth_images " << depth_count << "], [--align_images " << align_count << "]." << std::endl
               << "\033[?25h"; // Show cursor.
     ROS_INFO("rosbag convert to image successed.\nOutput path: %s", imgPath.c_str());
 
