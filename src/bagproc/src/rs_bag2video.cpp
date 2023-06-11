@@ -123,12 +123,12 @@ int main(int argc, char **argv)
     std::cout << "\033[?25l"; // Hidden cursor
 
     std::string color_video = videoPath + "color_" + filename + ".mp4";
-    std::string depth_video = outPath + "depth_" + filename + ".mp4";
-    std::string align_video = outPath + "align_" + filename + ".mp4";
+    std::string depth_video = videoPath + "depth_" + filename + ".mp4";
+    std::string align_video = videoPath + "align_" + filename + ".mp4";
     cv::VideoWriter color_writer, depth_writer, align_writer;
-    color_writer.open(color_video, cv::VideoWriter::fourcc('h', '2', '6', '4'), 30, cv::Size(640, 480));
-    depth_writer.open(depth_video, cv::VideoWriter::fourcc('h', '2', '6', '4'), 30, cv::Size(640, 480));
-    align_writer.open(align_video, cv::VideoWriter::fourcc('h', '2', '6', '4'), 30, cv::Size(640, 480));
+    color_writer.open(color_video, cv::VideoWriter::fourcc('H', '2', '6', '4'), 30, cv::Size(640, 480));
+    depth_writer.open(depth_video, cv::VideoWriter::fourcc('M', 'P', 'E', 'G'), 30, cv::Size(848, 480));
+    align_writer.open(align_video, cv::VideoWriter::fourcc('M', 'P', 'E', 'G'), 30, cv::Size(640, 480));
     uint16_t color_count = 0, depth_count = 0, align_count = 0;
 
     for (rosbag::MessageInstance const m : rosbag::View(bag))

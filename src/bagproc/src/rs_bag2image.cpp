@@ -43,7 +43,25 @@ bool create_dir(const std::string& path) {
     return mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == 0;
 }
 
-bool check_image_dir(std::string& path)
+// Check whether the target folder exists, and create it if it does not
+bool check_targetDir(std::string& path)
+{
+    bool success = true;
+    if(!checkPath_OK(path))
+    {
+        success = create_dir(path);
+        if(success) {
+            ROS_INFO("create_dir :%s success.",path.c_str());
+        }
+        else {
+            ROS_WARN("create_dir :%s failure.",path.c_str());
+        }
+    }
+    return success;
+}
+
+// Check whether the target folder exists, and clear it if it does not
+bool check_imageDir(std::string& path)
 {
     bool success = true;
     if(checkPath_OK(path))
@@ -77,10 +95,10 @@ std::string removeUnderscores(const std::string& inputStr) {
 
 int main(int argc, char **argv)
 {
-    std::string bagPath;
+    std::string bagPath, filter;
     uint8_t interval;
 
-    if(argc != 3)
+    if(argc < 3)
     {
         ROS_WARN_STREAM("Error grguiments. Todo: --bagPath --interval(Image extraction frame interval)");
         std::cout << "Enter the bagfile complete path:" << std::endl;
@@ -88,12 +106,22 @@ int main(int argc, char **argv)
         std::cout << "Enter the file image extraction frame interval:" << std::endl;
         std::cin >> interval;
     }
-    else
+    else if(argc == 3)
     {
         bagPath.assign(argv[1]);
         interval = atoi(argv[2]);
     }
-    std::cout << "[rs_bag2image] INFO:" << " --bagPath:" << bagPath << " --interval(frames):" << unsigned(interval) << std::endl;
+    else
+    {
+        bagPath.assign(argv[1]);
+        interval = atoi(argv[2]);
+        filter.assign(argv[3]);
+    }
+
+    bool colorizer =false;
+    if(filter == "colorizer")
+        colorizer = true;
+    std::cout << "[rs_bag2image] INFO:" << "\n --bagPath:" << bagPath << "\n --interval(frames):" << unsigned(interval) << " --colorizer:" << std::boolalpha << colorizer << std::endl;
 
     ros::init(argc, argv, "rs_bag2image");
     if(boost::filesystem::exists(bagPath) == false)  // Check whether the bagfile exists.
@@ -107,7 +135,7 @@ int main(int argc, char **argv)
     filename = removeUnderscores(filename);
 
     std::string outPath = filePath + "/output_images";
-    if(!check_image_dir(outPath))
+    if(!check_targetDir(outPath))
     {
         ROS_ERROR("Check output_image DIR error, outPath: %s", outPath.c_str());
         return -1;
@@ -118,28 +146,28 @@ int main(int argc, char **argv)
 
     std::string imgPath;
     imgPath = outPath + filename;
-    if (!check_image_dir(imgPath))
+    if (!check_targetDir(imgPath))
     {
         ROS_ERROR("check image DIR error, imgPath: %s", imgPath.c_str());
         return -1;
     }
 
-    std::string colorPath = imgPath +  "/color";
-    if (!check_image_dir(colorPath))
+    std::string colorPath = imgPath +  "color";
+    if (!check_imageDir(colorPath))
     {
         ROS_ERROR("check image DIR error, imgPath: %s", colorPath.c_str());
         return -1;
     }
 
-    std::string depthPath = imgPath +  "/depth";
-    if (!check_image_dir(depthPath))
+    std::string depthPath = imgPath +  "depth";
+    if (!check_imageDir(depthPath))
     {
         ROS_ERROR("check image DIR error, imgPath: %s", depthPath.c_str());
         return -1;
     }
 
-    std::string alignPath = imgPath +  "/align";
-    if (!check_image_dir(alignPath))
+    std::string alignPath = imgPath +  "align";
+    if (!check_imageDir(alignPath))
     {
         ROS_ERROR("check image DIR error, imgPath: %s", alignPath.c_str());
         return -1;
@@ -158,8 +186,7 @@ int main(int argc, char **argv)
             std::cout << "\r[rs_bag2image] -Start:---->>  -color:" << color_count << " -depth:" << depth_count << " -align:" << align_count;
             try
             {
-                cv::Mat image = cv::imdecode(cv::Mat(image_ptr->data), cv::IMREAD_COLOR);
-
+                cv::Mat image = cv::imdecode(cv::Mat(image_ptr->data), cv::IMREAD_COLOR);   // IMREAD_ANYDEPTH
                 if(m.getTopic() == "/camera/color/image_raw/compressed")
                 {
                     if ((++color_cap) % interval == 0)
@@ -175,6 +202,16 @@ int main(int argc, char **argv)
                     {
                         std::stringstream imgName;
                         imgName << depthPath << "depth_"  << std::setw(5) << std::setfill('0') << ++depth_count << ".png";
+                        if(!colorizer)
+                        {
+                            image = cv_bridge::toCvCopy(image_ptr, sensor_msgs::image_encodings::TYPE_16UC1)->image;
+                            //  normalized the depth image to between 0 and 255
+                            // double min_value, max_value;
+                            // cv::minMaxLoc(image, &min_value, &max_value);
+                            // cv::Mat temp_image;
+                            // cv::convertScaleAbs(image, temp_image, 255.0 / max_value);
+                            // cv::imwrite(imgName.str(), temp_image);
+                        }
                         cv::imwrite(imgName.str(), image);
                     }
                 }
@@ -184,6 +221,8 @@ int main(int argc, char **argv)
                     {
                         std::stringstream imgName;
                         imgName << alignPath << "align_"  << std::setw(5) << std::setfill('0') << ++align_count << ".png";
+                        if(!colorizer)
+                            image = cv_bridge::toCvCopy(image_ptr, sensor_msgs::image_encodings::TYPE_16UC1)->image;
                         cv::imwrite(imgName.str(), image);
                     }
                 }

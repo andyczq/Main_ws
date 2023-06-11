@@ -43,6 +43,23 @@ bool create_dir(const std::string& path) {
     return mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == 0;
 }
 
+// Check whether the target folder exists, and create it if it does not
+bool check_targetDir(std::string& path)
+{
+    bool success = true;
+    if(!checkPath_OK(path))
+    {
+        success = create_dir(path);
+        if(success) {
+            ROS_INFO("create_dir :%s success.",path.c_str());
+        }
+        else {
+            ROS_WARN("create_dir :%s failure.",path.c_str());
+        }
+    }
+    return success;
+}
+
 bool check_image_dir(std::string& path)
 {
     bool success = true;
@@ -107,7 +124,7 @@ int main(int argc, char **argv)
     filename = removeUnderscores(filename);
 
     std::string outPath = filePath + "/output_images";
-    if(!check_image_dir(outPath))
+    if(!check_targetDir(outPath))
     {
         ROS_ERROR("Check output_image DIR error, outPath: %s", outPath.c_str());
         return -1;
