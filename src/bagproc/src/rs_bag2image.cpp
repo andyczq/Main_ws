@@ -187,7 +187,7 @@ int main(int argc, char **argv)
             try
             {
                 cv::Mat image = cv::imdecode(cv::Mat(image_ptr->data), cv::IMREAD_COLOR);   // IMREAD_ANYDEPTH
-                if(m.getTopic() == "/camera/color/image_raw/compressed")
+                if(m.getTopic() == "/camera/color/image_raw")
                 {
                     if ((++color_cap) % interval == 0)
                     {
@@ -196,33 +196,33 @@ int main(int argc, char **argv)
                         cv::imwrite(imgName.str(), image);
                     }
                 }
-                else if(m.getTopic() == "/camera/depth/image_rect_raw/compressed")
+                else if(m.getTopic() == "/camera/depth/image_rect_raw")
                 {
                     if ((++depth_cap) % interval == 0)
                     {
                         std::stringstream imgName;
                         imgName << depthPath << "depth_"  << std::setw(5) << std::setfill('0') << ++depth_count << ".png";
-                        if(!colorizer)
-                        {
-                            image = cv_bridge::toCvCopy(image_ptr, sensor_msgs::image_encodings::TYPE_16UC1)->image;
-                            //  normalized the depth image to between 0 and 255
-                            // double min_value, max_value;
-                            // cv::minMaxLoc(image, &min_value, &max_value);
-                            // cv::Mat temp_image;
-                            // cv::convertScaleAbs(image, temp_image, 255.0 / max_value);
-                            // cv::imwrite(imgName.str(), temp_image);
-                        }
+                        // if(!colorizer)
+                        // {
+                        //     image = cv_bridge::toCvCopy(image_ptr, sensor_msgs::image_encodings::TYPE_16UC1)->image;
+                        //     //  normalized the depth image to between 0 and 255
+                        //     // double min_value, max_value;
+                        //     // cv::minMaxLoc(image, &min_value, &max_value);
+                        //     // cv::Mat temp_image;
+                        //     // cv::convertScaleAbs(image, temp_image, 255.0 / max_value);
+                        //     // cv::imwrite(imgName.str(), temp_image);
+                        // }
                         cv::imwrite(imgName.str(), image);
                     }
                 }
-                else if(m.getTopic() == "/camera/aligned_depth_to_color/image_raw/compressed")
+                else if(m.getTopic() == "/camera/aligned_depth_to_color/image_raw")
                 {
                     if ((++align_cap) % interval == 0)
                     {
                         std::stringstream imgName;
                         imgName << alignPath << "align_"  << std::setw(5) << std::setfill('0') << ++align_count << ".png";
-                        if(!colorizer)
-                            image = cv_bridge::toCvCopy(image_ptr, sensor_msgs::image_encodings::TYPE_16UC1)->image;
+                        // if(!colorizer)
+                        //     image = cv_bridge::toCvCopy(image_ptr, sensor_msgs::image_encodings::TYPE_16UC1)->image;
                         cv::imwrite(imgName.str(), image);
                     }
                 }

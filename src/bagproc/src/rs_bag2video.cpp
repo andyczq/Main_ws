@@ -142,17 +142,17 @@ int main(int argc, char **argv)
             {
                 cv::Mat image = cv::imdecode(cv::Mat(image_ptr->data), cv::IMREAD_COLOR);
 
-                if(m.getTopic() == "/camera/color/image_raw/compressed")
+                if(m.getTopic() == "/camera/color/image_raw")
                 {
                     color_count++;
                     color_writer << image;
                 }
-                else if(m.getTopic() == "/camera/depth/image_rect_raw/compressed")
+                else if(m.getTopic() == "/camera/depth/image_rect_raw")
                 {
                     depth_count++;
                     depth_writer << image;
                 }
-                else if(m.getTopic() == "/camera/aligned_depth_to_color/image_raw/compressed")
+                else if(m.getTopic() == "/camera/aligned_depth_to_color/image_raw")
                 {
                     align_count++;
                     align_writer << image;
