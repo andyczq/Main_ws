@@ -1,7 +1,7 @@
 <launch>
 
     <arg name="user"       default="$(env USER)"/>
-    <arg name="filters"         default=""/>        <!-- The options, separated by commas: colorizer, pointcloud -->
+    <arg name="filters"         default="colorizer"/>        <!-- The options, separated by commas: colorizer, pointcloud -->
     <arg name="align_depth"     default="true"/>    <!-- If set to true, will publish additional topics with all the images aligned to the depth image. -->
     <arg name="record"          default="false"/>
 
@@ -11,6 +11,8 @@
         <arg name="filters"         value="$(arg filters)"/>
         <arg name="align_depth"     value="$(arg align_depth)"/>
     </include>
+
+    <node pkg="tf2_ros" type="static_transform_publisher" name="camera_base_link" args="0.2 0.0 0.4 0 0 0 base_link camera_link"/>
 
     <group if="$(eval record)">
             <node pkg="rosbag"  type="record"   name="record_d435"  output="screen"    args="/camera/color/image_raw/compressed /camera/depth/image_rect_raw/compressed -o /home/$(arg user)/Main_WS/bagdata/rs">

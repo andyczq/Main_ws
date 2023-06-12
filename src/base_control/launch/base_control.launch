@@ -3,12 +3,10 @@
     <arg name="user"       default="$(env USER)"/>
     <arg name="record_odom"  default="false"/>
 
-    <node name="base_control"  pkg="base_control"  type="base_control_node"  output="screen">
-    </node>
+    <node name="base_control"  pkg="base_control"  type="base_control_node"  output="screen"/>
 
-    <group if="$(eval record)">
-        <node pkg="rosbag"  type="record"   name="record_odom"  output="screen"    args="/odom /tf -o /home/$(arg user)/Main_WS/bagdata/odom">
-        </node>
+    <group if="$(eval record_odom)">
+        <node pkg="rosbag"  type="record"   name="record_odom"  output="screen"    args="/odom /tf -o /home/$(arg user)/Main_WS/bagdata/odom"/>
     </group>
 
 </launch>

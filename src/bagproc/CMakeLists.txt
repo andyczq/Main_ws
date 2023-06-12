@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   rosbag
   cv_bridge
+  realsense2_camera
 )
 find_package(OpenCV REQUIRED)
 

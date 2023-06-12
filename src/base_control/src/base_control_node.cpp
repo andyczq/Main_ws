@@ -142,7 +142,7 @@ void BaseControl::PubOdom_TimerCallback(const ros::TimerEvent &event)
         nav_msgs::Odometry odom_msgs;
         odom_msgs.header.stamp = now_time;
         odom_msgs.header.frame_id = "odom";
-        odom_msgs.child_frame_id = "move_base";
+        odom_msgs.child_frame_id = "base_link";
         odom_msgs.pose.pose.position.x = odometer.pose.x;
         odom_msgs.pose.pose.position.y = odometer.pose.y;
         odom_msgs.pose.pose.position.z = 0;
@@ -155,7 +155,7 @@ void BaseControl::PubOdom_TimerCallback(const ros::TimerEvent &event)
         geometry_msgs::TransformStamped tfs;
         tfs.header.stamp = now_time;
         tfs.header.frame_id = "odom";
-        tfs.child_frame_id = "move_base";
+        tfs.child_frame_id = "base_link";
         tfs.transform.translation.x = odometer.pose.x;
         tfs.transform.translation.y = odometer.pose.y;
         tfs.transform.translation.z = 0;
