@@ -47,7 +47,7 @@ bool check_targetDir(std::string& path)
 {
     bool success = true;
     if(!checkPath_OK(path))
-        {
+    {
         success = create_dir(path);
         if(success) {
             ROS_INFO("create_dir :%s success.",path.c_str());
