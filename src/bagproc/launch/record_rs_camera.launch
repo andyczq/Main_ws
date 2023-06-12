@@ -5,10 +5,10 @@
     <arg name="filters"         default="colorizer"/>        <!-- The options, separated by commas: colorizer, pointcloud -->
     <arg name="align_depth"     default="true"/>    <!-- If set to true, will publish additional topics with all the images aligned to the depth image. -->
 
-    <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+    <!-- <include file="$(find realsense2_camera)/launch/rs_camera.launch">
         <arg name="filters"         value="$(arg filters)"/>
         <arg name="align_depth"     value="$(arg align_depth)"/>
-    </include>
+    </include> -->
 
     <group if="$(eval image_raw)">
         <node pkg="rosbag"  type="record"   name="record_rs_camera"  output="screen"    
