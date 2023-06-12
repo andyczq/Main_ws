@@ -149,15 +149,16 @@ int main(int argc, char **argv)
     // find specified content in string
     for (rosbag::MessageInstance const m : rosbag::View(bag))
     {
+        std::cout << "\r[bag2image] -Start:---->>  -image_compressed:" << frames_cpr << " -image_raw:" << frames_img;
+        
         sensor_msgs::CompressedImageConstPtr c_img_ptr = m.instantiate<sensor_msgs::CompressedImage>();
         if (c_img_ptr != nullptr)
         {
             if ((++count_cpr) % interval == 0)
             {
-                std::cout << "\r[bag2image] -Compressed Start:---->>  " << ++frames_cpr;
                 cv::Mat img = cv_bridge::toCvCopy(c_img_ptr, sensor_msgs::image_encodings::BGR8)->image;
                 std::stringstream ss;
-                ss << imgPath << "cpr_" << frames_cpr << ".png";
+                ss << imgPath << "cpr_" << ++frames_cpr << ".png";
                 cv::imwrite(ss.str(), img);
             }
         }
@@ -167,10 +168,9 @@ int main(int argc, char **argv)
         {
             if ((++count_img) % interval == 0)
             {
-                std::cout << "\r[bag2image] Start:---->>  " << ++frames_img;
                 cv::Mat img = cv_bridge::toCvShare(img_ptr, sensor_msgs::image_encodings::BGR8)->image;
                 std::stringstream ss;
-                ss << imgPath << "img_" << frames_img << ".png";
+                ss << imgPath << "img_" << ++frames_img << ".png";
                 cv::imwrite(ss.str(), img);
             }
         }

@@ -124,10 +124,12 @@ int main(int argc, char **argv)
 
     for (rosbag::MessageInstance const m : rosbag::View(bag))
     {
+        std::cout << "\r[bag2video] -Start:---->>  -compressed_frames:" << frames_cpr << " -raw_frames:" << frames_img;
+
         sensor_msgs::CompressedImageConstPtr c_img_ptr = m.instantiate<sensor_msgs::CompressedImage>();
         if (c_img_ptr != nullptr)
         {
-            std::cout << "\r[bag2video] -Compressed Start:---->>  " << ++frames_cpr;
+            ++frames_cpr;
             cv::Mat img = cv_bridge::toCvCopy(c_img_ptr, sensor_msgs::image_encodings::BGR8)->image;
             vWriter1 << img;
         }
@@ -135,7 +137,7 @@ int main(int argc, char **argv)
         sensor_msgs::ImageConstPtr img_ptr = m.instantiate<sensor_msgs::Image>();
         if (img_ptr != nullptr)
         {
-            std::cout << "\r[bag2video] Start:-->>  " << ++frames_img;
+            ++frames_img;
             cv::Mat img = cv_bridge::toCvShare(img_ptr, sensor_msgs::image_encodings::BGR8)->image;
             vWriter2 << img;
         }
