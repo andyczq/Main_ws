@@ -76,20 +76,48 @@ std::string removeStrigula(const std::string& inputStr) {
 
 int main(int argc, char **argv)
 {
-    std::string bagPath;
+    std::string bagPath, filter;
 
-    if(argc != 2)
+    if(argc < 2)
     {
         ROS_WARN_STREAM("Error grguiments. Todo: --bagPath");
         std::cout << "Enter the bagfile complete path:" << std::endl;
         std::cin >> bagPath;
     }
-    else
+    else if(argc == 2)
     {
         bagPath.assign(argv[1]);
     }
+    else if(argc == 3)
+    {
+        bagPath.assign(argv[1]);
+        filter.assign(argv[2]);
+    }
+    else
+    {
+        ROS_ERROR_STREAM("Input parameter sequence incorrect, [rs_bag2video] exit.");
+        return -1;
+    }
 
-    ROS_INFO("[rs_bag2video] --bagPath: %s", bagPath.c_str());
+    bool image_compressed =true;
+    if(filter == "raw")
+        image_compressed = false;
+
+    std::cout << "[rs_bag2video] INFO:" << "\n --bagPath:" << bagPath << " --compressed_image?:" << std::boolalpha << image_compressed << std::endl;
+
+    std::string subTopics[3];
+    if(image_compressed)
+    {
+        subTopics[0] = "/camera/color/image_raw/compressed";
+        subTopics[1] = "/camera/depth/image_rect_raw/compressed";
+        subTopics[2] = "/camera/aligned_depth_to_color/image_raw/compressed";
+    }
+    else
+    {
+        subTopics[0] = "/camera/color/image_raw";
+        subTopics[1] = "/camera/depth/image_rect_raw";
+        subTopics[2] = "/camera/aligned_depth_to_color/image_raw";
+    }
 
     if(boost::filesystem::exists(bagPath) == false)  // Check whether the bagfile exists.
     {
@@ -142,17 +170,17 @@ int main(int argc, char **argv)
             {
                 cv::Mat image = cv::imdecode(cv::Mat(image_ptr->data), cv::IMREAD_COLOR);
 
-                if(m.getTopic() == "/camera/color/image_raw")
+                if(m.getTopic() == subTopics[0])
                 {
                     color_count++;
                     color_writer << image;
                 }
-                else if(m.getTopic() == "/camera/depth/image_rect_raw")
+                else if(m.getTopic() == subTopics[1])
                 {
                     depth_count++;
                     depth_writer << image;
                 }
-                else if(m.getTopic() == "/camera/aligned_depth_to_color/image_raw")
+                else if(m.getTopic() == subTopics[2])
                 {
                     align_count++;
                     align_writer << image;

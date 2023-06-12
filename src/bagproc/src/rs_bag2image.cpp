@@ -111,17 +111,36 @@ int main(int argc, char **argv)
         bagPath.assign(argv[1]);
         interval = atoi(argv[2]);
     }
-    else
+    else if(argc == 4)
     {
         bagPath.assign(argv[1]);
         interval = atoi(argv[2]);
         filter.assign(argv[3]);
     }
+    else
+    {
+        ROS_ERROR_STREAM("Input parameter sequence incorrect, [rs_bag2video] exit.");
+        return -1;
+    }
 
-    bool colorizer =false;
-    if(filter == "colorizer")
-        colorizer = true;
-    std::cout << "[rs_bag2image] INFO:" << "\n --bagPath:" << bagPath << "\n --interval(frames):" << unsigned(interval) << " --colorizer:" << std::boolalpha << colorizer << std::endl;
+    bool image_compressed =true;
+    if(filter == "raw")
+        image_compressed = false;
+    std::cout << "[rs_bag2image] INFO:" << "\n --bagPath:" << bagPath << "\n --interval(frames):" << unsigned(interval) << " --compressed_image?:" << std::boolalpha << image_compressed << std::endl;
+
+    std::string subTopics[3];
+    if(image_compressed)
+    {
+        subTopics[0] = "/camera/color/image_raw/compressed";
+        subTopics[1] = "/camera/depth/image_rect_raw/compressed";
+        subTopics[2] = "/camera/aligned_depth_to_color/image_raw/compressed";
+    }
+    else
+    {
+        subTopics[0] = "/camera/color/image_raw";
+        subTopics[1] = "/camera/depth/image_rect_raw";
+        subTopics[2] = "/camera/aligned_depth_to_color/image_raw";
+    }
 
     ros::init(argc, argv, "rs_bag2image");
     if(boost::filesystem::exists(bagPath) == false)  // Check whether the bagfile exists.
@@ -187,7 +206,7 @@ int main(int argc, char **argv)
             try
             {
                 cv::Mat image = cv::imdecode(cv::Mat(image_ptr->data), cv::IMREAD_COLOR);   // IMREAD_ANYDEPTH
-                if(m.getTopic() == "/camera/color/image_raw")
+                if(m.getTopic() == subTopics[0])
                 {
                     if ((++color_cap) % interval == 0)
                     {
@@ -196,7 +215,7 @@ int main(int argc, char **argv)
                         cv::imwrite(imgName.str(), image);
                     }
                 }
-                else if(m.getTopic() == "/camera/depth/image_rect_raw")
+                else if(m.getTopic() == subTopics[1])
                 {
                     if ((++depth_cap) % interval == 0)
                     {
@@ -215,7 +234,7 @@ int main(int argc, char **argv)
                         cv::imwrite(imgName.str(), image);
                     }
                 }
-                else if(m.getTopic() == "/camera/aligned_depth_to_color/image_raw")
+                else if(m.getTopic() == subTopics[2])
                 {
                     if ((++align_cap) % interval == 0)
                     {
@@ -234,7 +253,7 @@ int main(int argc, char **argv)
         }
     }
     bag.close();
-    std::cout << "\nbag2image complished extract: [--color_images " << color_count << "], [--depth_images " << depth_count << "], [--align_images " << align_count << "]." << std::endl
+    std::cout << "\nrs_bag2image complished extract: [--color_images " << color_count << "], [--depth_images " << depth_count << "], [--align_images " << align_count << "]." << std::endl
               << "\033[?25h"; // Show cursor.
     ROS_INFO("rosbag convert to image successed.\nOutput path: %s", imgPath.c_str());
 
