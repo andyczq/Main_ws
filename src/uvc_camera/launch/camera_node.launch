@@ -3,9 +3,8 @@
     <param name="width" type="int" value="640" />
     <param name="height" type="int" value="480" />
     <param name="fps" type="int" value="30" />
-    <param name="frame" type="string" value="wide_stereo" />
-    <param name="frame_id" value="camera" />
-    <param name="format" value="rgb" />  <!-- jpeg or other(rgb)-->
+    <param name="frame_id"  type="string" value="camera" />
+    <param name="format" type="string" value="rgb" />  <!-- jpeg or other(rgb)-->
     <!-- <param name="power_line_frequency" value="50"/> -->
 
     <!-- <param name="auto_focus" type="bool" value="False" />

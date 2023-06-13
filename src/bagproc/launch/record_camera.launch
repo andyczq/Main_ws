@@ -1,0 +1,21 @@
+<launch>
+
+    <arg name="user"            default="$(env USER)"/>
+    <arg name="image_raw"          default="false"/>
+
+    <!-- <include file="$(find uvc_camera)/launch/camera_node.launch">
+    </include> -->
+
+    <group if="$(eval image_raw)">
+        <node pkg="rosbag"  type="record"   name="record_camera"  output="screen"    
+            args="/image_raw -o /home/$(arg user)/Main_WS/bagdata/cam_raw">
+        </node>
+    </group>
+
+    <group unless="$(eval image_raw)">
+        <node pkg="rosbag"  type="record"   name="record_rs_camera"  output="screen"    
+                args="/image_raw/compressed -o /home/$(arg user)/Main_WS/bagdata/cam_compressed">
+        </node>
+    </group>
+
+</launch>
