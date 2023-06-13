@@ -168,10 +168,12 @@ int main(int argc, char **argv)
         {
             if ((++count_img) % interval == 0)
             {
-                cv::Mat img = cv_bridge::toCvShare(img_ptr, sensor_msgs::image_encodings::BGR8)->image;
+                cv::Mat img = cv_bridge::toCvCopy(img_ptr, sensor_msgs::image_encodings::RGB8)->image;
+                cv::Mat image;
+                cv::cvtColor(img, image, CV_RGB2BGR);
                 std::stringstream ss;
                 ss << imgPath << "img_" << ++frames_img << ".png";
-                cv::imwrite(ss.str(), img);
+                cv::imwrite(ss.str(), image);
             }
         }
     }
