@@ -6,7 +6,12 @@
     <include file="$(find base_control)/launch/base_control.launch"></include>
 
     <node pkg="uvc_camera"  type="uvc_camera_node"   name="uvc_camera"  output="screen">
-        <param name="device"    value="/dev/video0"/>
+        <param name="device"    type="string"   value="/dev/video0"/>
+        <param name="frame_id" value="camera" />
+        <param name="fps" value="30" />
+        <param name="width" value="640" />
+        <param name="height" value="480" />
+        <param name="format" value="rgb" />
     </node>
 
     <node pkg="tf2_ros" type="static_transform_publisher" name="camera_base_link" args="0.2 0.0 0.4 0 0 0 /base_link /camera_link"/>
