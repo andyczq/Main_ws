@@ -11,10 +11,10 @@
         <param name="fps" value="30" />
         <param name="width" value="640" />
         <param name="height" value="480" />
-        <param name="format" value="rgb" />
+        <param name="format" value="rgb" />  <!-- jpeg or other(rgb)-->
     </node>
 
-    <node pkg="tf2_ros" type="static_transform_publisher" name="camera_base_link" args="0.2 0.0 0.4 0 0 0 /base_link /camera_link"/>
+    <node pkg="tf2_ros" type="static_transform_publisher" name="camera_base_link" args="0.2 0.0 0.4 0 0 0 /base_link /camera"/>
 
     <group if="$(eval record)">
         <node pkg="rosbag"  type="record"   name="record_cam"  output="screen"    args="/image_raw/compressed -o /home/$(arg user)/Main_WS/bagdata/cam">
