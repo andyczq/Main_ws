@@ -199,58 +199,98 @@ int main(int argc, char **argv)
     std::cout << "\033[?25l\n";   // Hidden cursor
     for (rosbag::MessageInstance const m : rosbag::View(bag))
     {
-        sensor_msgs::CompressedImageConstPtr image_ptr = m.instantiate<sensor_msgs::CompressedImage>();
-        if (image_ptr != nullptr)
+        if(image_compressed)
         {
-            std::cout << "\r[rs_bag2image] -Start:---->>  -color:" << color_count << " -depth:" << depth_count << " -align:" << align_count;
-            try
+            sensor_msgs::CompressedImageConstPtr image_ptr = m.instantiate<sensor_msgs::CompressedImage>();
+            if (image_ptr != nullptr)
             {
-                cv::Mat image = cv::imdecode(cv::Mat(image_ptr->data), cv::IMREAD_COLOR);   // IMREAD_ANYDEPTH
-                if(m.getTopic() == subTopics[0])
+                std::cout << "\r[rs_bag2image] -Start:---->>  -color:" << color_count << " -depth:" << depth_count << " -align:" << align_count;
+                std::stringstream imgName;
+                try
                 {
-                    if ((++color_cap) % interval == 0)
+                    cv::Mat image = cv::imdecode(cv::Mat(image_ptr->data), cv::IMREAD_COLOR); // IMREAD_ANYDEPTH
+                    if (m.getTopic() == subTopics[0])
                     {
-                        std::stringstream imgName;
-                        imgName << colorPath << "color_"  << std::setw(5) << std::setfill('0') << ++color_count << ".png";
-                        cv::imwrite(imgName.str(), image);
+                        if ((++color_cap) % interval == 0)
+                        {
+                            // cv::Mat image = cv_bridge::toCvCopy(image_ptr, sensor_msgs::image_encodings::BGR8)->image;
+                            imgName << colorPath << "color_" << std::setw(5) << std::setfill('0') << ++color_count << ".png";
+                            cv::imwrite(imgName.str(), image);
+                        }
+                    }
+                    else if (m.getTopic() == subTopics[1])
+                    {
+                        if ((++depth_cap) % interval == 0)
+                        {
+                            // cv::Mat image = cv_bridge::toCvCopy(image_ptr, sensor_msgs::image_encodings::TYPE_16UC1)->image;
+                            imgName << depthPath << "depth_" << std::setw(5) << std::setfill('0') << ++depth_count << ".png";
+                            cv::imwrite(imgName.str(), image);
+                        }
+                    }
+                    else if (m.getTopic() == subTopics[2])
+                    {
+                        if ((++align_cap) % interval == 0)
+                        {
+                            // cv::Mat image = cv_bridge::toCvCopy(image_ptr, sensor_msgs::image_encodings::TYPE_16UC1)->image;
+                            imgName << alignPath << "align_" << std::setw(5) << std::setfill('0') << ++align_count << ".png";
+                            cv::imwrite(imgName.str(), image);
+                        }
                     }
                 }
-                else if(m.getTopic() == subTopics[1])
+                catch (const cv_bridge::Exception &e)
                 {
-                    if ((++depth_cap) % interval == 0)
-                    {
-                        std::stringstream imgName;
-                        imgName << depthPath << "depth_"  << std::setw(5) << std::setfill('0') << ++depth_count << ".png";
-                        // if(!colorizer)
-                        // {
-                        //     image = cv_bridge::toCvCopy(image_ptr, sensor_msgs::image_encodings::TYPE_16UC1)->image;
-                        //     //  normalized the depth image to between 0 and 255
-                        //     // double min_value, max_value;
-                        //     // cv::minMaxLoc(image, &min_value, &max_value);
-                        //     // cv::Mat temp_image;
-                        //     // cv::convertScaleAbs(image, temp_image, 255.0 / max_value);
-                        //     // cv::imwrite(imgName.str(), temp_image);
-                        // }
-                        cv::imwrite(imgName.str(), image);
-                    }
+                    ROS_ERROR("cv_bridge exception: %s", e.what());
                 }
-                else if(m.getTopic() == subTopics[2])
-                {
-                    if ((++align_cap) % interval == 0)
-                    {
-                        std::stringstream imgName;
-                        imgName << alignPath << "align_"  << std::setw(5) << std::setfill('0') << ++align_count << ".png";
-                        // if(!colorizer)
-                        //     image = cv_bridge::toCvCopy(image_ptr, sensor_msgs::image_encodings::TYPE_16UC1)->image;
-                        cv::imwrite(imgName.str(), image);
-                    }
-                }
-            }
-            catch(const cv_bridge::Exception& e)
-            {
-                ROS_ERROR("cv_bridge exception: %s", e.what());
             }
         }
+        else
+        {
+            sensor_msgs::ImageConstPtr img_ptr = m.instantiate<sensor_msgs::Image>();
+            if (img_ptr != nullptr)
+            {
+                std::cout << "\r[rs_bag2image] RAW -Start:---->>  -color:" << color_count << " -depth:" << depth_count << " -align:" << align_count;
+                std::stringstream imgName;
+                
+                try
+                {
+                    if (m.getTopic() == subTopics[0])
+                    {
+                        if ((++color_cap) % interval == 0)
+                        {
+                            cv::Mat image = cv_bridge::toCvCopy(img_ptr, sensor_msgs::image_encodings::BGR8)->image;
+                            // cv::Mat image = cv::imdecode(cv::Mat(img_ptr->data), cv::IMREAD_ANYCOLOR); // IMREAD_ANYDEPTH
+                            imgName << colorPath << "color_raw" << std::setw(5) << std::setfill('0') << ++color_count << ".png";
+                            cv::imwrite(imgName.str(), image);
+                        }
+                    }
+                    else if (m.getTopic() == subTopics[1])
+                    {
+                        if ((++depth_cap) % interval == 0)
+                        {
+                            // cv::Mat image = cv::imdecode(cv::Mat(img_ptr->data), cv::IMREAD_ANYDEPTH); // IMREAD_ANYDEPTH
+                            cv::Mat image = cv_bridge::toCvCopy(img_ptr, sensor_msgs::image_encodings::BGR8)->image;  // TYPE_16UC1
+                            imgName << depthPath << "depth_raw" << std::setw(5) << std::setfill('0') << ++depth_count << ".png";
+                            cv::imwrite(imgName.str(), image);
+                        }
+                    }
+                    else if (m.getTopic() == subTopics[2])
+                    {
+                        if ((++align_cap) % interval == 0)
+                        {
+                            // cv::Mat image = cv::imdecode(cv::Mat(img_ptr->data), cv::IMREAD_ANYDEPTH); // IMREAD_ANYDEPTH
+                            cv::Mat image = cv_bridge::toCvCopy(img_ptr, sensor_msgs::image_encodings::BGR8)->image;
+                            imgName << alignPath << "align_raw" << std::setw(5) << std::setfill('0') << ++align_count << ".png";
+                            cv::imwrite(imgName.str(), image);
+                        }
+                    }
+                }
+                catch (const cv_bridge::Exception &e)
+                {
+                    ROS_ERROR("cv_bridge exception: %s", e.what());
+                }
+            }
+        }
+
     }
     bag.close();
     std::cout << "\nrs_bag2image complished extract: [--color_images " << color_count << "], [--depth_images " << depth_count << "], [--align_images " << align_count << "]." << std::endl

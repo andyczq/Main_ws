@@ -12,6 +12,7 @@
         <param name="width" value="640" />
         <param name="height" value="480" />
         <param name="format" value="rgb" />  <!-- jpeg or other(rgb)-->
+        <param name="auto_white_balance" type="bool" value="true" />
     </node>
 
     <node pkg="tf2_ros" type="static_transform_publisher" name="camera_base_link" args="0.2 0.0 0.4 0 0 0 /base_link /camera"/>

@@ -1,10 +1,13 @@
 <launch>
 
-    <arg name="user"            default="$(env USER)"/>
-    <arg name="image_raw"          default="false"/>
+    <arg name="user"                default="$(env USER)"/>
+    <arg name="image_raw"           default="false"/>
+    <arg name="running"             default="false"/>
 
-    <!-- <include file="$(find uvc_camera)/launch/camera_node.launch">
-    </include> -->
+    <group unless="$(eval running)">
+        <include file="$(find uvc_camera)/launch/camera_node.launch"/>
+        <node name="rviz" pkg="rviz" type="rviz" args="-d $(find bagproc)/rviz/camera_200w.rviz" required="true" />
+    </group>
 
     <group if="$(eval image_raw)">
         <node pkg="rosbag"  type="record"   name="record_camera"  output="screen"    
