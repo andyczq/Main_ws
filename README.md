@@ -1,15 +1,15 @@
 # tgrobot-ros-jetson_Notebook
 
-### 1.Ubuntu下使用命令行连接WiFi
-**扫描WiFi**
+### 1.Ubuntu涓嬩娇鐢ㄥ懡浠よ杩炴帴WiFi
+**鎵弿WIFI**
 ``` 
 sudo iwlist scan
 ```
-**列出所有WiFi**
+**鍒楀嚭鎵�鏈塛IFI**
 ```
 nmcli device wifi list
 ```
-**连接指定WiFi**
+**杩炴帴鎸囧畾WIFI**
 ```
-sudo nmcli device wifi connect WiFi名称 password WiFi密码
+sudo nmcli device wifi connect WiFi_NAME password WiFi_PASSWORD
 ```
