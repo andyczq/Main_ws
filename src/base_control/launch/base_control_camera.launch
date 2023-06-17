@@ -9,13 +9,13 @@
         <param name="device"    type="string"   value="/dev/video0"/>
         <param name="frame_id" value="camera" />
         <param name="fps" value="30" />
-        <param name="width" value="640" />
-        <param name="height" value="480" />
-        <param name="format" value="rgb" />  <!-- jpeg or other(rgb)-->
+        <param name="width" value="1920" />
+        <param name="height" value="1080" />
+        <param name="format" value="jpeg" />  <!-- jpeg or other(rgb)-->
         <param name="auto_white_balance" type="bool" value="true" />
     </node>
 
-    <node pkg="tf2_ros" type="static_transform_publisher" name="camera_base_link" args="0.2 0.0 0.4 0 0 0 /base_link /camera"/>
+    <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="camera_base_link" args="0.2 0.0 0.4 0 0 0 /base_link /camera"/> -->
 
     <group if="$(eval record)">
         <node pkg="rosbag"  type="record"   name="record_cam"  output="screen"    args="/image_raw/compressed -o /home/$(arg user)/Main_WS/bagdata/cam">

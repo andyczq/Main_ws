@@ -4,7 +4,7 @@
     <arg name="image_raw"          default="false"/>
     <arg name="filters"         default="colorizer"/>        <!-- The options, separated by commas: colorizer, pointcloud -->
     <arg name="align_depth"     default="true"/>    <!-- If set to true, will publish additional topics with all the images aligned to the depth image. -->
-    <arg name="running"             default="false"/>
+    <arg name="running"             default="true"/>
 
     <group unless="$(eval running)">
         <include file="$(find realsense2_camera)/launch/rs_camera.launch">
@@ -14,6 +14,10 @@
         <node name="rviz" pkg="rviz" type="rviz" args="-d $(find bagproc)/rviz/rs_d435.rviz" required="true" />
     </group>
 
+    <group if="$(eval running)">
+        <node pkg="rqt_image_view" type="rqt_image_view" name="image_view"/>
+    </group>
+
     <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="camera_base_link" args="0.2 0.0 0.4 0 0 0 map camera_link"/> -->
 
     <group if="$(eval image_raw)">
@@ -21,7 +25,7 @@
             args="/camera/aligned_depth_to_color/image_raw
                 /camera/color/image_raw
                 /camera/depth/image_rect_raw 
-                -o /home/$(arg user)/Main_WS/bagdata/rs">
+                -o /home/$(arg user)/Main_WS/bagdata/rs_raw">
         </node>
     </group>
 
@@ -30,7 +34,7 @@
                 args="/camera/aligned_depth_to_color/image_raw/compressed
                     /camera/color/image_raw/compressed
                     /camera/depth/image_rect_raw/compressed 
-                    -o /home/$(arg user)/Main_WS/bagdata/rs">
+                    -o /home/$(arg user)/Main_WS/bagdata/rs_cpr">
         </node>
     </group>
 

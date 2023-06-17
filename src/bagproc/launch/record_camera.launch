@@ -2,11 +2,15 @@
 
     <arg name="user"                default="$(env USER)"/>
     <arg name="image_raw"           default="false"/>
-    <arg name="running"             default="false"/>
+    <arg name="running"             default="true"/>
 
     <group unless="$(eval running)">
         <include file="$(find uvc_camera)/launch/camera_node.launch"/>
         <node name="rviz" pkg="rviz" type="rviz" args="-d $(find bagproc)/rviz/camera_200w.rviz" required="true" />
+    </group>
+
+    <group if="$(eval running)">
+        <node pkg="rqt_image_view" type="rqt_image_view" name="image_view"/>
     </group>
 
     <group if="$(eval image_raw)">
