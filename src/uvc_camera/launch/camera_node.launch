@@ -1,13 +1,13 @@
 <launch>
   <node pkg="uvc_camera" type="uvc_camera_node" name="uvc_camera" output="screen">
-    <param name="width" type="int" value="1920" />
-    <param name="height" type="int" value="1080" />
-    <param name="fps" type="int" value="30" />
+    <param name="width" type="int" value="1024" />  <!--1280*720 1920*1080 640*480-->
+    <param name="height" type="int" value="768" />
+    <!-- <param name="fps" type="int" value="30" /> -->
     <param name="frame_id"  type="string" value="camera" />
     <param name="format" type="string" value="jpeg" />  <!-- jpeg or other(rgb)-->
     <param name="auto_white_balance" type="bool" value="true" />
     
-    <param name="power_line_frequency" value="50"/>
+    <!-- <param name="power_line_frequency" value="50"/> -->
     <!-- <param name="auto_focus" type="bool" value="False" />
     <param name="focus_absolute" type="int" value="0" /> -->
     <!-- other supported params: auto_focus, focus_absolute, auto_exposure, exposure_absolute, brightness, power_line_frequency -->
