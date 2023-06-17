@@ -8,9 +8,9 @@
     <node pkg="uvc_camera"  type="uvc_camera_node"   name="uvc_camera"  output="screen">
         <param name="device"    type="string"   value="/dev/video0"/>
         <param name="frame_id" value="camera" />
-        <param name="fps" value="30" />
-        <param name="width" value="1920" />
-        <param name="height" value="1080" />
+        <!-- <param name="fps" value="30" /> -->
+        <param name="width" value="1024" />
+        <param name="height" value="768" />
         <param name="format" value="jpeg" />  <!-- jpeg or other(rgb)-->
         <param name="auto_white_balance" type="bool" value="true" />
     </node>
