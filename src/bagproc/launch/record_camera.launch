@@ -21,7 +21,7 @@
 
     <group unless="$(eval image_raw)">
         <node pkg="rosbag"  type="record"   name="record_rs_camera"  output="screen"    
-            args="/image_raw/compressed -o /home/$(arg user)/Main_WS/bagdata/cam_cpr">
+            args="/image_raw/compressed -o /home/$(arg user)/Main_WS/bagdata/YD0617/cam_cpr">
         </node>
     </group>
 
