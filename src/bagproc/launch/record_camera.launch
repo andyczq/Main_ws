@@ -3,6 +3,7 @@
     <arg name="user"                default="$(env USER)"/>
     <arg name="image_raw"           default="false"/>
     <arg name="running"             default="true"/>
+    <arg name="date"                default="YD0702"/>
 
     <group unless="$(eval running)">
         <include file="$(find uvc_camera)/launch/camera_node.launch"/>
@@ -10,18 +11,21 @@
     </group>
 
     <group if="$(eval running)">
-        <node pkg="rqt_image_view" type="rqt_image_view" name="image_view"/>
+        <!-- <include file="$(find libuvc_camera)/launch/shl_camera.launch"></include> -->
+        <!-- <include file="$(find uvc_camera)/launch/shl_camera.launch"></include> -->
+        <!-- <include file="$(find usb_cam)/launch/shl_cam200.launch"></include> -->
+        <!-- <node pkg="rqt_image_view" type="rqt_image_view" name="image_view"/> -->
     </group>
 
     <group if="$(eval image_raw)">
         <node pkg="rosbag"  type="record"   name="record_camera"  output="screen"    
-            args="/image_raw -o /home/$(arg user)/Main_WS/bagdata/cam_raw">
+            args="/image_raw -o /home/$(arg user)/Main_WS/bagdata/$(arg date)/cam_raw">
         </node>
     </group>
 
     <group unless="$(eval image_raw)">
         <node pkg="rosbag"  type="record"   name="record_rs_camera"  output="screen"    
-            args="/image_raw/compressed -o /home/$(arg user)/Main_WS/bagdata/YD0617/cam_cpr">
+            args="/image_raw/compressed -o /home/$(arg user)/Main_WS/bagdata/$(arg date)/cam_cpr">
         </node>
     </group>
 

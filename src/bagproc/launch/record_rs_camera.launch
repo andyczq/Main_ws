@@ -5,20 +5,21 @@
     <arg name="filters"         default="colorizer"/>        <!-- The options, separated by commas: colorizer, pointcloud -->
     <arg name="align_depth"     default="true"/>    <!-- If set to true, will publish additional topics with all the images aligned to the depth image. -->
     <arg name="running"             default="true"/>
+    <arg name="date"                default="YD0702"/>
 
     <group unless="$(eval running)">
         <include file="$(find realsense2_camera)/launch/rs_camera.launch">
             <arg name="filters"         value="$(arg filters)"/>
             <arg name="align_depth"     value="$(arg align_depth)"/>
-            <arg name="color_width"     value="1280"/>  <!--1280*720-->
-            <arg name="color_height"     value="720"/>
+            <arg name="color_width"     value="640"/>  <!--1280*720-->
+            <arg name="color_height"     value="480"/>
             <arg name="color_fps"     value="30"/>
         </include>
         <node name="rviz" pkg="rviz" type="rviz" args="-d $(find bagproc)/rviz/rs_d435.rviz" required="true" />
     </group>
 
     <group if="$(eval running)">
-        <node pkg="rqt_image_view" type="rqt_image_view" name="image_view"/>
+        <!-- <node pkg="rqt_image_view" type="rqt_image_view" name="image_view"/> -->
     </group>
 
     <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="camera_base_link" args="0.2 0.0 0.4 0 0 0 map camera_link"/> -->
@@ -28,7 +29,7 @@
             args="/camera/aligned_depth_to_color/image_raw
                 /camera/color/image_raw
                 /camera/depth/image_rect_raw 
-                -o /home/$(arg user)/Main_WS/bagdata/rs_raw">
+                -o /home/$(arg user)/Main_WS/bagdata/$(arg date)/rs_raw">
         </node>
     </group>
 
@@ -37,7 +38,7 @@
                 args="/camera/aligned_depth_to_color/image_raw/compressed
                     /camera/color/image_raw/compressed
                     /camera/depth/image_rect_raw/compressed 
-                    -o /home/$(arg user)/Main_WS/bagdata/rs_cpr">
+                    -o /home/$(arg user)/Main_WS/bagdata/$(arg date)/rs_cpr">
         </node>
     </group>
 

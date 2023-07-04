@@ -4,16 +4,17 @@
     <arg name="record"  default="false"/>
 
     <include file="$(find base_control)/launch/base_control.launch"></include>
+    <include file="$(find libuvc_camera)/launch/shl_camera.launch"></include>
 
-    <node pkg="uvc_camera"  type="uvc_camera_node"   name="uvc_camera"  output="screen">
+    <!-- <node pkg="uvc_camera"  type="uvc_camera_node"   name="uvc_camera"  output="screen">
         <param name="device"    type="string"   value="/dev/video0"/>
         <param name="frame_id" value="camera" />
         <param name="width" value="1024" />
         <param name="height" value="768" />
-        <param name="format" value="jpeg" />  <!-- jpeg or other(rgb)-->
+        <param name="format" value="jpeg" />
         <param name="auto_white_balance" type="bool" value="true" />
         <param name="exposure_absolute" type="int" value="75" />
-    </node>
+    </node> -->
 
     <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="camera_base_link" args="0.2 0.0 0.4 0 0 0 /base_link /camera"/> -->
 
